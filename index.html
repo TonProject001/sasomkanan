@@ -47,21 +47,37 @@
             }
         }
 
-        async function checkUser(uid, displayName) {
-            const response = await fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'getUser', lineUserId: uid })
-            });
-            const result = await response.json();
-            
-            document.getElementById('loader').classList.add('hidden');
-            if (result.exists) {
-                document.getElementById('profileSection').classList.remove('hidden');
-                document.getElementById('userName').innerText = result.name;
-                document.getElementById('userPoints').innerText = result.points;
-                document.getElementById('userLevel').innerText = result.level;
-            } else {
-                document.getElementById('registerSection').classList.remove('hidden');
+async function checkUser(uid, displayName) {
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    redirect: 'follow', // ป้องกันการหลงทางของลิงก์
+                    body: JSON.stringify({ action: 'getUser', lineUserId: uid })
+                });
+                
+                const result = await response.json();
+                
+                document.getElementById('loader').classList.add('hidden');
+                
+                if (result.exists) {
+                    document.getElementById('profileSection').classList.remove('hidden');
+                    document.getElementById('userName').innerText = result.name;
+                    document.getElementById('userPoints').innerText = result.points;
+                    document.getElementById('userLevel').innerText = result.level;
+                } else {
+                    document.getElementById('registerSection').classList.remove('hidden');
+                }
+            } catch (error) {
+                // ถ้ามีอะไรพัง ให้มันฟ้องออกมาตรงนี้เลย
+                document.getElementById('loader').innerHTML = `
+                    <div style="color: red; background: #ffe6e6; padding: 15px; border-radius: 10px;">
+                        <b>❌ การเชื่อมต่อล้มเหลว</b><br><br>
+                        <small>ข้อผิดพลาด: ${error.message}</small><br><br>
+                        <small><b>วิเคราะห์สาเหตุหลัก:</b><br>
+                        1. ลืม Deploy เป็น "เวอร์ชันใหม่"<br>
+                        2. สิทธิ์ไม่ได้ตั้งเป็น "ทุกคน (Anyone)"</small>
+                    </div>
+                `;
             }
         }
 
