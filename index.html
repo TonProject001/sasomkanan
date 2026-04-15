@@ -66,6 +66,62 @@
         }
 
         // ฟังก์ชันอื่นๆ เช่น register, dailyCheckIn จะเขียนเพิ่มในขั้นต่อไป
+        // ฟังก์ชันสมัครสมาชิก
+        async function register() {
+            const fullName = document.getElementById('regFullName').value;
+            const phone = document.getElementById('regPhone').value;
+            
+            if(!fullName || !phone) {
+                alert("กรุณากรอกข้อมูลให้ครบถ้วนก่อนนะครับ");
+                return;
+            }
+
+            const profile = await liff.getProfile();
+            
+            // เปลี่ยนข้อความตอนกำลังโหลด
+            document.getElementById('registerSection').innerHTML = "<p>กำลังบันทึกข้อมูล...</p>";
+
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: 'register', 
+                    lineUserId: profile.userId,
+                    displayName: profile.displayName,
+                    fullName: fullName,
+                    phone: phone
+                })
+            });
+            
+            const result = await response.json();
+            if(result.success) {
+                alert("สมัครสมาชิก BioBloom สำเร็จ! ยินดีต้อนรับครับ");
+                location.reload(); // รีเฟรชหน้าเว็บ 1 ครั้งเพื่อโหลดหน้าโปรไฟล์
+            }
+        }
+
+        // ฟังก์ชันเช็คอินรับแต้ม
+        async function dailyCheckIn() {
+            const profile = await liff.getProfile();
+            
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: 'addPoints', 
+                    lineUserId: profile.userId,
+                    points: 10,
+                    desc: 'เช็คอินรายวัน'
+                })
+            });
+            
+            const result = await response.json();
+            if(result.success) {
+                alert("เช็คอินสำเร็จ! ได้รับ 10 แต้ม\nแต้มรวมของคุณคือ: " + result.newPoints);
+                
+                // อัปเดตตัวเลขบนหน้าจอทันทีโดยไม่ต้องรีเฟรช
+                document.getElementById('userPoints').innerText = result.newPoints;
+                document.getElementById('userLevel').innerText = result.level;
+            }
+        }
         main();
     </script>
 </body>
