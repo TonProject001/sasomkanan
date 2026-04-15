@@ -1,105 +1,71 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Loyalty Program</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioBloom Member Club</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f4f7f6; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        button { background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
-    <div id="loading">กำลังโหลดข้อมูล...</div>
-    
-    <div id="dashboard" style="display: none;">
-        <h2>สวัสดีคุณ <span id="displayName"></span></h2>
-        <p>สถานะ: <span id="level"></span></p>
-        <p>คะแนนสะสมปัจจุบันของคุณคือ: <strong id="points">0</strong> แต้ม</p>
-        <p style="font-size: 12px; color: gray;">(คะแนนจำนวน <span id="pointsLabel"></span> แต้ม จะหมดอายุในวันที่ <span id="expiryDate"></span>)</p>
+    <div class="card">
+        <h2 id="brandName">BioBloom Member</h2>
+        <div id="loader">กำลังโหลดข้อมูล...</div>
         
-        <button onclick="showUpdateForm()">อัปเดตข้อมูลส่วนตัว</button>
+        <div id="profileSection" class="hidden">
+            <p>สวัสดีคุณ: <span id="userName">-</span></p>
+            <p>ระดับสมาชิก: <b id="userLevel">-</b></p>
+            <p>คะแนนสะสมปัจจุบันของคุณคือ: <h1 id="userPoints">0</h1> แต้ม</p>
+            <button onclick="dailyCheckIn()">เช็คอินรับแต้มรายวัน (+10)</button>
         </div>
 
-    <div id="updateForm" style="display: none;">
-        <h3>ข้อมูลส่วนตัว</h3>
-        <input type="text" id="fullName" placeholder="ชื่อ-นามสกุล">
-        <input type="text" id="phone" placeholder="เบอร์โทรศัพท์">
-        <button onclick="saveProfile()">บันทึกข้อมูล</button>
+        <div id="registerSection" class="hidden">
+            <p>ดูเหมือนคุณยังไม่ได้เป็นสมาชิก</p>
+            <input type="text" id="regFullName" placeholder="ชื่อ-นามสกุล"><br><br>
+            <input type="tel" id="regPhone" placeholder="เบอร์โทรศัพท์"><br><br>
+            <button onclick="register()">สมัครสมาชิกเลย</button>
+        </div>
     </div>
 
     <script>
-        const LIFF_ID = "2009801800-jZKJHG0u";
-        const API_URL = "https://script.google.com/macros/s/AKfycbxp-WIa0-_h6SxL9otreUG802BmUXQbjaXOE8E_g12Od1nmbt0yRTtfB4GWDj00y12aeg/exec";
-        let currentUserUid = "";
-        let currentDisplayName = "";
+        // --- 1. ตั้งค่าสำคัญ (เปลี่ยนตรงนี้) ---
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbysE8zcxldztRYDo7HnMmkV_EIDI5AQ0UoWMtiIPpauydb1b0R_fig1-Zm9mlA_ndRgDA/exec";
+        const LIFF_ID = "2009801800-jZKJHG0u"; 
 
         async function main() {
             await liff.init({ liffId: LIFF_ID });
             if (!liff.isLoggedIn()) {
                 liff.login();
-                return;
-            }
-            const profile = await liff.getProfile();
-            currentUserUid = profile.userId;
-            currentDisplayName = profile.displayName;
-            
-            // ส่งไปตรวจสอบที่ระบบ
-            fetchUserData(currentUserUid, currentDisplayName);
-        }
-
-        async function fetchUserData(uid, displayName) {
-            const response = await fetch(API_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "login_or_register", uid: uid, displayName: displayName })
-            });
-            const result = await response.json();
-            
-            document.getElementById("loading").style.display = "none";
-            
-            if (result.isNew) {
-                document.getElementById("updateForm").style.display = "block";
             } else {
-                updateDashboardUI(result.user);
+                const profile = await liff.getProfile();
+                checkUser(profile.userId, profile.displayName);
             }
         }
 
-        async function saveProfile() {
-            const fullName = document.getElementById("fullName").value;
-            const phone = document.getElementById("phone").value;
-            
-            document.getElementById("updateForm").style.display = "none";
-            document.getElementById("loading").style.display = "block";
-
-            const response = await fetch(API_URL, {
-                method: "POST",
-                body: JSON.stringify({ 
-                    action: "update_profile", 
-                    uid: currentUserUid, 
-                    fullName: fullName, 
-                    phone: phone 
-                })
+        async function checkUser(uid, displayName) {
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'getUser', lineUserId: uid })
             });
             const result = await response.json();
             
-            document.getElementById("loading").style.display = "none";
-            if (result.status === "success") {
-                // รีเฟรชข้อมูลบนหน้าจอทันทีโดยไม่ต้องโหลดหน้าเว็บใหม่
-                updateDashboardUI(result.user);
+            document.getElementById('loader').classList.add('hidden');
+            if (result.exists) {
+                document.getElementById('profileSection').classList.remove('hidden');
+                document.getElementById('userName').innerText = result.name;
+                document.getElementById('userPoints').innerText = result.points;
+                document.getElementById('userLevel').innerText = result.level;
+            } else {
+                document.getElementById('registerSection').classList.remove('hidden');
             }
         }
 
-        function updateDashboardUI(user) {
-            document.getElementById("displayName").innerText = user.displayName;
-            document.getElementById("points").innerText = user.points;
-            document.getElementById("pointsLabel").innerText = user.points;
-            document.getElementById("level").innerText = user.level;
-            document.getElementById("expiryDate").innerText = user.pointsExpiry;
-            
-            document.getElementById("dashboard").style.display = "block";
-            document.getElementById("updateForm").style.display = "none";
-        }
-
-        function showUpdateForm() {
-            document.getElementById("dashboard").style.display = "none";
-            document.getElementById("updateForm").style.display = "block";
-        }
-
+        // ฟังก์ชันอื่นๆ เช่น register, dailyCheckIn จะเขียนเพิ่มในขั้นต่อไป
         main();
     </script>
 </body>
