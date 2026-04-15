@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Loyalty Program</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+    <div id="loading">กำลังโหลดข้อมูล...</div>
+    
+    <div id="dashboard" style="display: none;">
+        <h2>สวัสดีคุณ <span id="displayName"></span></h2>
+        <p>สถานะ: <span id="level"></span></p>
+        <p>คะแนนสะสมปัจจุบันของคุณคือ: <strong id="points">0</strong> แต้ม</p>
+        <p style="font-size: 12px; color: gray;">(คะแนนจำนวน <span id="pointsLabel"></span> แต้ม จะหมดอายุในวันที่ <span id="expiryDate"></span>)</p>
+        
+        <button onclick="showUpdateForm()">อัปเดตข้อมูลส่วนตัว</button>
+        </div>
+
+    <div id="updateForm" style="display: none;">
+        <h3>ข้อมูลส่วนตัว</h3>
+        <input type="text" id="fullName" placeholder="ชื่อ-นามสกุล">
+        <input type="text" id="phone" placeholder="เบอร์โทรศัพท์">
+        <button onclick="saveProfile()">บันทึกข้อมูล</button>
+    </div>
+
+    <script>
+        const LIFF_ID = "2009801800-jZKJHG0u";
+        const API_URL = "https://script.google.com/macros/s/AKfycbxp-WIa0-_h6SxL9otreUG802BmUXQbjaXOE8E_g12Od1nmbt0yRTtfB4GWDj00y12aeg/exec";
+        let currentUserUid = "";
+        let currentDisplayName = "";
+
+        async function main() {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) {
+                liff.login();
+                return;
+            }
+            const profile = await liff.getProfile();
+            currentUserUid = profile.userId;
+            currentDisplayName = profile.displayName;
+            
+            // ส่งไปตรวจสอบที่ระบบ
+            fetchUserData(currentUserUid, currentDisplayName);
+        }
+
+        async function fetchUserData(uid, displayName) {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "login_or_register", uid: uid, displayName: displayName })
+            });
+            const result = await response.json();
+            
+            document.getElementById("loading").style.display = "none";
+            
+            if (result.isNew) {
+                document.getElementById("updateForm").style.display = "block";
+            } else {
+                updateDashboardUI(result.user);
+            }
+        }
+
+        async function saveProfile() {
+            const fullName = document.getElementById("fullName").value;
+            const phone = document.getElementById("phone").value;
+            
+            document.getElementById("updateForm").style.display = "none";
+            document.getElementById("loading").style.display = "block";
+
+            const response = await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    action: "update_profile", 
+                    uid: currentUserUid, 
+                    fullName: fullName, 
+                    phone: phone 
+                })
+            });
+            const result = await response.json();
+            
+            document.getElementById("loading").style.display = "none";
+            if (result.status === "success") {
+                // รีเฟรชข้อมูลบนหน้าจอทันทีโดยไม่ต้องโหลดหน้าเว็บใหม่
+                updateDashboardUI(result.user);
+            }
+        }
+
+        function updateDashboardUI(user) {
+            document.getElementById("displayName").innerText = user.displayName;
+            document.getElementById("points").innerText = user.points;
+            document.getElementById("pointsLabel").innerText = user.points;
+            document.getElementById("level").innerText = user.level;
+            document.getElementById("expiryDate").innerText = user.pointsExpiry;
+            
+            document.getElementById("dashboard").style.display = "block";
+            document.getElementById("updateForm").style.display = "none";
+        }
+
+        function showUpdateForm() {
+            document.getElementById("dashboard").style.display = "none";
+            document.getElementById("updateForm").style.display = "block";
+        }
+
+        main();
+    </script>
+</body>
+</html>
