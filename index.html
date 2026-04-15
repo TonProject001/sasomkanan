@@ -8,24 +8,30 @@
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f4f7f6; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        button { background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button { background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; width: 100%;}
+        input { padding: 10px; width: 80%; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
         .hidden { display: none; }
+        #errorLog { color: red; text-align: left; background: #ffe6e6; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 14px; word-wrap: break-word;}
+        #loader { font-weight: bold; color: #0056b3; margin-bottom: 15px; }
     </style>
 </head>
 <body>
     <div class="card">
         <h2 id="brandName">BioBloom Member</h2>
-        <div id="loader">กำลังโหลดข้อมูล...</div>
+        
+        <div id="loader">กำลังเริ่มต้นระบบ...</div>
+        
+        <div id="errorLog" class="hidden"></div>
         
         <div id="profileSection" class="hidden">
             <p>สวัสดีคุณ: <span id="userName">-</span></p>
             <p>ระดับสมาชิก: <b id="userLevel">-</b></p>
-            <p>คะแนนสะสมปัจจุบันของคุณคือ: <h1 id="userPoints">0</h1> แต้ม</p>
+            <p>คะแนนสะสมปัจจุบัน: <h1 id="userPoints">0</h1> แต้ม</p>
             <button onclick="dailyCheckIn()">เช็คอินรับแต้มรายวัน (+10)</button>
         </div>
 
         <div id="registerSection" class="hidden">
-            <p>ดูเหมือนคุณยังไม่ได้เป็นสมาชิก</p>
+            <p>ยินดีต้อนรับ! กรุณาลงทะเบียน</p>
             <input type="text" id="regFullName" placeholder="ชื่อ-นามสกุล"><br><br>
             <input type="tel" id="regPhone" placeholder="เบอร์โทรศัพท์"><br><br>
             <button onclick="register()">สมัครสมาชิกเลย</button>
@@ -33,25 +39,44 @@
     </div>
 
     <script>
-        // --- 1. ตั้งค่าสำคัญ (เปลี่ยนตรงนี้) ---
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxluo202bUXgl5mBkmRL0tQiBdlX06VhVP82AovRPVt0597Y5I1UMZV8-cEeb2dZ_kpVA/exec";
-        const LIFF_ID = "2009809903-g6N3sM8C"; 
+        const LIFF_ID = "2009809903-g6N3sM8C";
+
+        // ฟังก์ชันสำหรับโชว์ Error บนหน้าจอ
+        function showError(step, err) {
+            const errDiv = document.getElementById('errorLog');
+            errDiv.classList.remove('hidden');
+            errDiv.innerHTML += `<b>❌ พังที่ขั้นตอน: ${step}</b><br>สาเหตุ: ${err.message || err}<br><br>`;
+            document.getElementById('loader').innerText = "ระบบหยุดทำงานเนื่องจากข้อผิดพลาด";
+        }
 
         async function main() {
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) {
-                liff.login();
-            } else {
+            try {
+                document.getElementById('loader').innerText = "1. กำลังเชื่อมต่อ LINE LIFF...";
+                await liff.init({ liffId: LIFF_ID });
+                
+                if (!liff.isLoggedIn()) {
+                    document.getElementById('loader').innerText = "กำลังเข้าสู่ระบบ LINE...";
+                    liff.login();
+                    return;
+                } 
+                
+                document.getElementById('loader').innerText = "2. กำลังดึงข้อมูลโปรไฟล์จาก LINE...";
                 const profile = await liff.getProfile();
-                checkUser(profile.userId, profile.displayName);
+                
+                document.getElementById('loader').innerText = "3. กำลังเชื่อมต่อ Google Sheets...";
+                await checkUser(profile.userId, profile.displayName);
+
+            } catch (e) {
+                showError("การเชื่อมต่อ LINE (LIFF Init)", e);
             }
         }
 
-async function checkUser(uid, displayName) {
+        async function checkUser(uid, displayName) {
             try {
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
-                    redirect: 'follow', // ป้องกันการหลงทางของลิงก์
+                    redirect: 'follow',
                     body: JSON.stringify({ action: 'getUser', lineUserId: uid })
                 });
                 
@@ -67,77 +92,59 @@ async function checkUser(uid, displayName) {
                 } else {
                     document.getElementById('registerSection').classList.remove('hidden');
                 }
-            } catch (error) {
-                // ถ้ามีอะไรพัง ให้มันฟ้องออกมาตรงนี้เลย
-                document.getElementById('loader').innerHTML = `
-                    <div style="color: red; background: #ffe6e6; padding: 15px; border-radius: 10px;">
-                        <b>❌ การเชื่อมต่อล้มเหลว</b><br><br>
-                        <small>ข้อผิดพลาด: ${error.message}</small><br><br>
-                        <small><b>วิเคราะห์สาเหตุหลัก:</b><br>
-                        1. ลืม Deploy เป็น "เวอร์ชันใหม่"<br>
-                        2. สิทธิ์ไม่ได้ตั้งเป็น "ทุกคน (Anyone)"</small>
-                    </div>
-                `;
+            } catch (e) {
+                showError("การเชื่อมต่อ Google Sheets (Fetch API)", e);
             }
         }
 
-        // ฟังก์ชันอื่นๆ เช่น register, dailyCheckIn จะเขียนเพิ่มในขั้นต่อไป
-        // ฟังก์ชันสมัครสมาชิก
         async function register() {
-            const fullName = document.getElementById('regFullName').value;
-            const phone = document.getElementById('regPhone').value;
-            
-            if(!fullName || !phone) {
-                alert("กรุณากรอกข้อมูลให้ครบถ้วนก่อนนะครับ");
-                return;
-            }
+            try {
+                const fullName = document.getElementById('regFullName').value;
+                const phone = document.getElementById('regPhone').value;
+                if(!fullName || !phone) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
 
-            const profile = await liff.getProfile();
-            
-            // เปลี่ยนข้อความตอนกำลังโหลด
-            document.getElementById('registerSection').innerHTML = "<p>กำลังบันทึกข้อมูล...</p>";
-
-            const response = await fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    action: 'register', 
-                    lineUserId: profile.userId,
-                    displayName: profile.displayName,
-                    fullName: fullName,
-                    phone: phone
-                })
-            });
-            
-            const result = await response.json();
-            if(result.success) {
-                alert("สมัครสมาชิก BioBloom สำเร็จ! ยินดีต้อนรับครับ");
-                location.reload(); // รีเฟรชหน้าเว็บ 1 ครั้งเพื่อโหลดหน้าโปรไฟล์
-            }
-        }
-
-        // ฟังก์ชันเช็คอินรับแต้ม
-        async function dailyCheckIn() {
-            const profile = await liff.getProfile();
-            
-            const response = await fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    action: 'addPoints', 
-                    lineUserId: profile.userId,
-                    points: 10,
-                    desc: 'เช็คอินรายวัน'
-                })
-            });
-            
-            const result = await response.json();
-            if(result.success) {
-                alert("เช็คอินสำเร็จ! ได้รับ 10 แต้ม\nแต้มรวมของคุณคือ: " + result.newPoints);
+                document.getElementById('loader').classList.remove('hidden');
+                document.getElementById('loader').innerText = "กำลังบันทึกข้อมูล...";
                 
-                // อัปเดตตัวเลขบนหน้าจอทันทีโดยไม่ต้องรีเฟรช
-                document.getElementById('userPoints').innerText = result.newPoints;
-                document.getElementById('userLevel').innerText = result.level;
+                const profile = await liff.getProfile();
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST', redirect: 'follow',
+                    body: JSON.stringify({ action: 'register', lineUserId: profile.userId, displayName: profile.displayName, fullName: fullName, phone: phone })
+                });
+                
+                const result = await response.json();
+                if(result.success) {
+                    alert("สมัครสมาชิกสำเร็จ!");
+                    location.reload();
+                }
+            } catch (e) {
+                showError("ตอนกดสมัครสมาชิก", e);
             }
         }
+
+        async function dailyCheckIn() {
+            try {
+                document.getElementById('loader').classList.remove('hidden');
+                document.getElementById('loader').innerText = "กำลังบันทึกคะแนน...";
+                
+                const profile = await liff.getProfile();
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST', redirect: 'follow',
+                    body: JSON.stringify({ action: 'addPoints', lineUserId: profile.userId, points: 10, desc: 'เช็คอินรายวัน' })
+                });
+                
+                const result = await response.json();
+                if(result.success) {
+                    alert("เช็คอินสำเร็จ! ได้ 10 แต้ม");
+                    document.getElementById('userPoints').innerText = result.newPoints;
+                    document.getElementById('userLevel').innerText = result.level;
+                    document.getElementById('loader').classList.add('hidden');
+                }
+            } catch (e) {
+                showError("ตอนกดเช็คอิน", e);
+            }
+        }
+
         main();
     </script>
 </body>
