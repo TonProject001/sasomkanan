@@ -3,46 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BioBloom Member Club</title>
+    <title>Láor Skincare Member</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 15px; background-color: #f4f7f6; margin: 0; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;}
-        button { color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 15px; margin-top: 10px; width: 100%;}
-        .btn-green { background-color: #28a745; }
-        .btn-blue { background-color: #007bff; }
-        .btn-gray { background-color: #6c757d; }
-        .btn-outline { background-color: transparent; border: 2px solid #007bff; color: #007bff; }
-        input { padding: 10px; width: 100%; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; box-sizing: border-box; }
+        /* ปรับ Theme ให้ดูพรีเมียมเข้ากับสกินแคร์ */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 15px; background-color: #fcf9f5; margin: 0; color: #4a4a4a; }
+        .card { background: white; padding: 25px 20px; border-radius: 20px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); margin-bottom: 20px;}
+        h2 { color: #d4af37; margin-top: 0;} /* สีทองหรูหรา */
+        
+        button { color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 15px; margin-top: 10px; width: 100%; font-weight: bold;}
+        .btn-green { background-color: #8db596; } /* สีเขียวละมุน */
+        .btn-blue { background-color: #b0a392; } /* สีน้ำตาล/เทาอ่อน */
+        .btn-outline { background-color: transparent; border: 2px solid #b0a392; color: #b0a392; }
+        
+        input, textarea { padding: 12px; width: 100%; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; box-sizing: border-box; font-family: inherit; }
+        textarea { resize: vertical; height: 80px; }
         .hidden { display: none !important; }
-        #errorLog { color: red; text-align: left; background: #ffe6e6; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 14px;}
-        #loader { font-weight: bold; color: #0056b3; margin-bottom: 15px; }
-        .expire-text { font-size: 13px; color: #d9534f; margin-top: -10px; margin-bottom: 15px; }
         
-        .nav-menu { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; overflow-x: auto;}
-        .nav-btn { flex: 1; padding: 8px 5px; border-radius: 8px; font-weight: bold; margin-top: 0; font-size: 14px; white-space: nowrap;}
+        #loader { font-weight: bold; color: #b0a392; margin-bottom: 15px; }
+        .expire-text { font-size: 13px; color: #e74c3c; margin-top: -10px; margin-bottom: 15px; }
         
-        .list-item { border: 1px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
-        .item-name { font-weight: bold; font-size: 16px; color: #333;}
-        .item-detail { font-size: 13px; color: #666; margin: 5px 0;}
-        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-bottom: 5px;}
-        .status-wait { background-color: #ffeeba; color: #856404; }
-        .status-done { background-color: #d4edda; color: #155724; }
+        .nav-menu { display: flex; gap: 8px; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; overflow-x: auto;}
+        .nav-btn { flex: 1; padding: 10px 5px; border-radius: 8px; margin-top: 0; font-size: 14px; white-space: nowrap;}
+        
+        /* สไตล์ของรางวัลและคลัง */
+        .list-item { border: 1px solid #eee; border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.02);}
+        .item-name { font-weight: bold; font-size: 17px; color: #333; margin-bottom: 5px;}
+        .item-detail { font-size: 13px; color: #777; margin: 8px 0; line-height: 1.4;}
+        
+        /* ควบคุมรูปภาพของรางวัล (โหลดไว ไม่กินพื้นที่) */
+        .reward-img { width: 100%; height: 160px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; background-color: #f4f4f4;}
+        .promo-expiry { font-size: 12px; color: #e67e22; font-weight: bold; margin-top: 5px; }
+        
+        /* Tracking Number */
+        .tracking-box { margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 8px; border-left: 3px solid #d4af37; font-size: 13px; font-family: monospace; color: #333;}
+        
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; margin-bottom: 10px;}
+        .status-wait { background-color: #fdf3d8; color: #d4ac0d; }
+        .status-done { background-color: #e8f5e9; color: #2e7d32; }
 
-        /* หน้าต่างป๊อปอัปโชว์ QR Code */
-        #qrModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; flex-direction: column; }
-        .qr-box { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 80%; max-width: 300px;}
-        #qrcodeArea { display: flex; justify-content: center; margin: 20px 0; }
-        .qr-text { font-size: 14px; color: #555; margin-bottom: 10px; }
+        /* ส่วนกรอกหมายเลขคำสั่งซื้อ */
+        .order-submit-box { background: #fafafa; padding: 15px; border-radius: 12px; border: 1px dashed #ccc; margin-top: 15px;}
     </style>
 </head>
 <body>
     <div class="card">
-        <h2 id="brandName">BioBloom Member</h2>
-        <div id="loader">กำลังตรวจสอบข้อมูลสมาชิก...</div>
-        <div id="errorLog" class="hidden"></div>
+        <h2 id="brandName">Láor Skincare Member</h2>
+        <div id="loader">กำลังตรวจสอบข้อมูล...</div>
+        <div id="errorLog" class="hidden" style="color:red; font-size:12px; margin-bottom:10px;"></div>
 
         <div id="navSection" class="nav-menu hidden">
             <button class="nav-btn btn-blue" id="btnProfile" onclick="showSection('profile')">หน้าหลัก</button>
@@ -51,13 +60,18 @@
         </div>
         
         <div id="profileSection" class="hidden">
-            <p>สวัสดีคุณ: <b id="userName">-</b></p>
-            <p>ระดับสมาชิก: <span id="userLevel">-</span></p>
-            <p>คะแนนสะสมปัจจุบันของคุณคือ: <h1 id="userPoints" style="margin: 5px 0;">0</h1></p>
+            <p style="font-size: 18px; margin-bottom: 5px;">สวัสดีคุณ: <b id="userName">-</b></p>
+            <p style="margin-top: 0; color: #888;">สถานะ: <span id="userLevel">-</span></p>
+            <p>คะแนนสะสมของคุณ: <h1 id="userPoints" style="margin: 5px 0; color: #d4af37; font-size: 40px;">0</h1></p>
             <p id="expiryNotice" class="expire-text hidden"></p>
             
-            <button class="btn-green" onclick="dailyCheckIn()">เช็คอินรับแต้มรายวัน (+10)</button>
-            <button class="btn-blue" onclick="openUpdateForm()">อัปเดตข้อมูลส่วนตัว</button>
+            <div class="order-submit-box">
+                <p style="margin-top:0; font-size:14px; font-weight:bold;">รับแต้มจากการสั่งซื้อ 🛍️</p>
+                <input type="text" id="orderInput" placeholder="ระบุหมายเลขคำสั่งซื้อของคุณ" style="margin-bottom: 10px;">
+                <button class="btn-green" onclick="submitOrder()">แจ้งตรวจสอบเพื่อรับแต้ม</button>
+            </div>
+
+            <button class="btn-blue" onclick="openUpdateForm()">แก้ไขข้อมูล / ที่อยู่จัดส่ง</button>
         </div>
 
         <div id="rewardsSection" class="hidden">
@@ -68,41 +82,37 @@
             <div id="warehouseList"></div>
         </div>
 
-        <div id="qrModal" class="hidden">
-            <div class="qr-box">
-                <h3>แสดง QR Code นี้</h3>
-                <p class="qr-text">ให้พนักงานสแกนเพื่อรับของรางวัล</p>
-                <div id="qrcodeArea"></div>
-                <p class="qr-text">รหัส: <span id="qrTxId"></span></p>
-                <button class="btn-gray" onclick="closeQR()">ปิดหน้าต่าง</button>
-            </div>
-        </div>
-
         <div id="registerSection" class="hidden">
-            <p>ยินดีต้อนรับ! กรุณาลงทะเบียน</p>
-            <input type="text" id="regFullName" placeholder="ชื่อ-นามสกุล"><br><br>
-            <input type="tel" id="regPhone" placeholder="เบอร์โทรศัพท์"><br><br>
+            <h3 style="color:#333;">สมัครสมาชิก Láor</h3>
+            <input type="text" id="regFullName" placeholder="ชื่อ-นามสกุล" required><br><br>
+            <input type="tel" id="regPhone" placeholder="เบอร์โทรศัพท์" required><br><br>
+            <label style="font-size: 13px; display:block; text-align:left; margin-bottom:5px;">วันเดือนปีเกิด:</label>
+            <input type="date" id="regDob"><br><br>
+            <textarea id="regAddress" placeholder="ที่อยู่สำหรับจัดส่งพัสดุ"></textarea><br><br>
             <button class="btn-green" onclick="register()">สมัครสมาชิกเลย</button>
         </div>
 
         <div id="updateSection" class="hidden">
-            <p>แก้ไขข้อมูลส่วนตัว</p>
+            <h3 style="color:#333;">อัปเดตข้อมูลของฉัน</h3>
             <input type="text" id="updFullName" placeholder="ชื่อ-นามสกุล"><br><br>
             <input type="tel" id="updPhone" placeholder="เบอร์โทรศัพท์"><br><br>
-            <button class="btn-blue" onclick="saveUpdate()">บันทึกข้อมูล</button>
-            <button class="btn-gray" onclick="showSection('profile')">ยกเลิก</button>
+            <label style="font-size: 13px; display:block; text-align:left; margin-bottom:5px;">วันเดือนปีเกิด:</label>
+            <input type="date" id="updDob"><br><br>
+            <textarea id="updAddress" placeholder="ที่อยู่สำหรับจัดส่งพัสดุ"></textarea><br><br>
+            <button class="btn-green" onclick="saveUpdate()">บันทึกข้อมูล</button>
+            <button class="btn-outline" onclick="showSection('profile')">ยกเลิก</button>
         </div>
     </div>
 
     <script>
+        // เปลี่ยน URL ให้เป็นของคุณเหมือนเดิม
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxluo202bUXgl5mBkmRL0tQiBdlX06VhVP82AovRPVt0597Y5I1UMZV8-cEeb2dZ_kpVA/exec";
         const LIFF_ID = "2009809903-g6N3sM8C";
         let currentUserData = {};
 
-        function showError(step, err) {
-            const errDiv = document.getElementById('errorLog');
-            errDiv.classList.remove('hidden');
-            errDiv.innerHTML += `<b>❌ เกิดข้อผิดพลาด:</b> ${step}<br>สาเหตุ: ${err.message || err}<br><br>`;
+        function showError(err) {
+            document.getElementById('errorLog').classList.remove('hidden');
+            document.getElementById('errorLog').innerText = err;
             document.getElementById('loader').classList.add('hidden');
         }
 
@@ -112,14 +122,12 @@
                 if (!liff.isLoggedIn()) { liff.login(); return; } 
                 const profile = await liff.getProfile();
                 await checkUser(profile.userId, profile.displayName);
-            } catch (e) { showError("การเชื่อมต่อระบบ", e); }
+            } catch (e) { showError("System connection failed."); }
         }
 
         async function checkUser(uid, displayName) {
             try {
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'getUser', lineUserId: uid })
-                });
+                const response = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'getUser', lineUserId: uid }) });
                 const result = await response.json();
                 document.getElementById('loader').classList.add('hidden');
                 
@@ -132,166 +140,170 @@
                     document.getElementById('userPoints').innerText = result.points;
                     document.getElementById('userLevel').innerText = result.level;
 
-                    const expNotice = document.getElementById('expiryNotice');
                     if (result.expiringPoints > 0) {
-                        expNotice.innerText = `(จะมี ${result.expiringPoints} คะแนนที่จะหมดอายุในวัน ${result.expiringDateText})`;
-                        expNotice.classList.remove('hidden');
-                    } else { expNotice.classList.add('hidden'); }
-                } else {
-                    document.getElementById('registerSection').classList.remove('hidden');
-                }
-            } catch (e) { showError("การโหลดข้อมูลสมาชิก", e); }
+                        document.getElementById('expiryNotice').innerText = `(แต้มจะหมดอายุ ${result.expiringPoints} คะแนน ในวันที่ ${result.expiringDateText})`;
+                        document.getElementById('expiryNotice').classList.remove('hidden');
+                    } else { document.getElementById('expiryNotice').classList.add('hidden'); }
+                } else { document.getElementById('registerSection').classList.remove('hidden'); }
+            } catch (e) { showError("Load error."); }
         }
 
-        // --- ระบบสลับหน้าแบบรวบตึง (ทำให้โค้ดสั้นลง) ---
         function showSection(sectionName) {
-            ['profile', 'rewards', 'warehouse', 'update'].forEach(sec => {
+            ['profile', 'rewards', 'warehouse', 'update', 'register'].forEach(sec => {
                 document.getElementById(sec + 'Section').classList.add('hidden');
             });
             document.getElementById(sectionName + 'Section').classList.remove('hidden');
 
-            if(sectionName !== 'update') {
-                ['Profile', 'Rewards', 'Warehouse'].forEach(btn => {
-                    document.getElementById('btn' + btn).className = "nav-btn btn-outline";
-                });
+            if(sectionName !== 'update' && sectionName !== 'register') {
+                ['Profile', 'Rewards', 'Warehouse'].forEach(btn => { document.getElementById('btn' + btn).className = "nav-btn btn-outline"; });
                 document.getElementById('btn' + sectionName.charAt(0).toUpperCase() + sectionName.slice(1)).className = "nav-btn btn-blue";
             }
-
-            // ถ้ากดหน้าแลกของ ให้ไปโหลดของ
             if(sectionName === 'rewards') loadRewards();
-            // ถ้ากดหน้าคลังของฉัน ให้ไปโหลดประวัติ
             if(sectionName === 'warehouse') loadWarehouse();
         }
 
         async function loadRewards() {
-            document.getElementById('rewardsList').innerHTML = "<p>กำลังโหลดรายการ...</p>";
+            document.getElementById('rewardsList').innerHTML = "<p>กำลังโหลดแคมเปญ...</p>";
             try {
-                const response = await fetch(WEB_APP_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'getRewards' }) });
-                const result = await response.json();
+                const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'getRewards' }) });
+                const result = await res.json();
                 if (result.success && result.rewards.length > 0) {
                     let html = "";
                     result.rewards.forEach(r => {
+                        // โชว์รูปถ้าระบุ URL ไว้
+                        let imgHtml = r.imgUrl ? `<img src="${r.imgUrl}" class="reward-img" alt="poster">` : '';
+                        let expiryHtml = r.expiry ? `<div class="promo-expiry">⏳ หมดเขต: ${r.expiry}</div>` : '';
+                        
                         html += `
                         <div class="list-item">
-                            <div class="item-name">🎁 ${r.name}</div>
-                            <div class="item-detail">ใช้ ${r.points} แต้ม | เหลือ ${r.stock} สิทธิ์</div>
-                            <button class="btn-green" onclick="redeemItem('${r.id}', '${r.name}', ${r.points})">แลกของรางวัล</button>
+                            ${imgHtml}
+                            <div class="item-name">${r.name}</div>
+                            <div class="item-detail">${r.desc}</div>
+                            <div class="item-detail" style="color:#d4af37; font-weight:bold;">ใช้ ${r.points} แต้ม (เหลือ ${r.stock} สิทธิ์)</div>
+                            ${expiryHtml}
+                            <button class="btn-green" style="margin-top:15px;" onclick="redeemItem('${r.id}', '${r.name}', ${r.points})">แลกรับสิทธิ์</button>
                         </div>`;
                     });
                     document.getElementById('rewardsList').innerHTML = html;
-                } else { document.getElementById('rewardsList').innerHTML = "<p>ยังไม่มีของให้แลกครับ</p>"; }
-            } catch (e) { showError("โหลดของรางวัล", e); }
+                } else { document.getElementById('rewardsList').innerHTML = "<p>ยังไม่มีโปรโมชั่นครับ</p>"; }
+            } catch (e) { showError("Reward load error."); }
         }
 
-        // --- โหลดคลังของรางวัล (ของใหม่) ---
         async function loadWarehouse() {
             document.getElementById('warehouseList').innerHTML = "<p>กำลังโหลดคลังของคุณ...</p>";
             try {
                 const profile = await liff.getProfile();
-                const response = await fetch(WEB_APP_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'getWarehouse', lineUserId: profile.userId }) });
-                const result = await response.json();
+                const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'getWarehouse', lineUserId: profile.userId }) });
+                const result = await res.json();
                 
                 if (result.success && result.history.length > 0) {
                     let html = "";
                     result.history.forEach(item => {
-                        let isWait = (item.status === 'ยังไม่ได้รับ');
+                        let isWait = (item.status !== 'รับแล้ว' && item.status !== 'จัดส่งแล้ว');
                         let statusClass = isWait ? 'status-wait' : 'status-done';
+                        
+                        // ฟีเจอร์ Tracking Number
+                        let trackingHtml = item.tracking ? `
+                            <div class="tracking-box">
+                                📦 <b>Tracking No:</b><br>${item.tracking}
+                            </div>` : '';
                         
                         html += `
                         <div class="list-item">
                             <span class="status-badge ${statusClass}">${item.status}</span>
                             <div class="item-name">${item.name}</div>
-                            <div class="item-detail">วันที่แลก: ${item.date} | เลขที่: ${item.txId}</div>
-                            ${isWait ? `<button class="btn-blue" onclick="showQR('${item.txId}')">โชว์ QR Code เพื่อรับของ</button>` : ''}
+                            <div class="item-detail">วันที่: ${item.date} | Ref: ${item.txId}</div>
+                            ${trackingHtml}
                         </div>`;
                     });
                     document.getElementById('warehouseList').innerHTML = html;
-                } else { document.getElementById('warehouseList').innerHTML = "<p>คุณยังไม่เคยแลกของรางวัลครับ</p>"; }
-            } catch (e) { showError("โหลดคลังของรางวัล", e); }
+                } else { document.getElementById('warehouseList').innerHTML = "<p>คุณยังไม่มีประวัติการรับของครับ</p>"; }
+            } catch (e) { showError("Warehouse load error."); }
         }
 
-// --- ระบบเปิดป๊อปอัป QR Code (เวอร์ชันแก้บัคค้าง) ---
-        function showQR(txId) {
-            // 1. โชว์หน้าต่างป๊อปอัป
-            document.getElementById('qrModal').classList.remove('hidden');
+        // --- ระบบส่งหมายเลขคำสั่งซื้อ ---
+        async function submitOrder() {
+            const orderInput = document.getElementById('orderInput').value.trim();
+            if(!orderInput) { alert("กรุณาระบุหมายเลขคำสั่งซื้อก่อนครับ"); return; }
             
-            // 2. ดักจับบั๊ก: ถ้าไม่มีรหัสส่งมา ให้ใช้คำว่า "No-ID" แทนช่องว่าง
-            let safeTxId = txId ? txId : "No-ID";
-            document.getElementById('qrTxId').innerText = safeTxId;
-            
-            // 3. ใช้ Image API สร้างภาพ QR Code แทน (เสถียร 100% ไม่ทำให้หน้าเว็บค้าง)
-            const qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + safeTxId;
-            document.getElementById('qrcodeArea').innerHTML = `<img src="${qrApiUrl}" alt="QR Code" style="border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">`;
-        }
-
-        function closeQR() {
-            document.getElementById('qrModal').classList.add('hidden');
-        }
-
-        // --------------------------------------------------------
-        // ฟังก์ชันอื่นๆ (เหมือนเดิม)
-        // --------------------------------------------------------
-        async function redeemItem(rId, rName, points) {
-            if(!confirm(`ยืนยันการใช้ ${points} แต้ม แลก "${rName}"?`)) return;
-            document.getElementById('rewardsList').innerHTML = "<p>กำลังดำเนินการ...</p>";
+            const btn = event.target; btn.disabled = true; btn.innerText = "กำลังส่งข้อมูล...";
             try {
                 const profile = await liff.getProfile();
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST', redirect: 'follow', 
-                    body: JSON.stringify({ action: 'redeem', lineUserId: profile.userId, rewardId: rId, rewardName: rName, points: points })
-                });
-                const result = await response.json();
+                const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'submitOrder', lineUserId: profile.userId, orderNum: orderInput }) });
+                const result = await res.json();
                 if(result.success) {
-                    alert("🎉 แลกสำเร็จ! ของรางวัลอยู่ใน 'คลังของฉัน'");
+                    alert(result.message);
+                    document.getElementById('orderInput').value = ""; // ล้างช่อง
+                }
+            } catch (e) { alert("ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่"); }
+            btn.disabled = false; btn.innerText = "แจ้งตรวจสอบเพื่อรับแต้ม";
+        }
+
+        async function redeemItem(rId, rName, points) {
+            // เช็คว่ากรอกที่อยู่หรือยัง
+            if(!currentUserData.address || currentUserData.address.trim() === "") {
+                alert("กรุณาเพิ่ม 'ที่อยู่จัดส่ง' ในหน้าข้อมูลส่วนตัว ก่อนทำการแลกของรางวัลครับ");
+                openUpdateForm();
+                return;
+            }
+
+            if(!confirm(`ยืนยันการใช้ ${points} แต้ม เพื่อแลก "${rName}"?`)) return;
+            document.getElementById('rewardsList').innerHTML = "<p>กำลังประมวลผล...</p>";
+            try {
+                const profile = await liff.getProfile();
+                const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'redeem', lineUserId: profile.userId, rewardId: rId, rewardName: rName, points: points }) });
+                const result = await res.json();
+                if(result.success) {
+                    alert("แลกของรางวัลสำเร็จ! แอดมินจะจัดส่งตามที่อยู่ที่ท่านระบุไว้ครับ");
                     document.getElementById('userPoints').innerText = result.newPoints;
-                    showSection('warehouse'); // เด้งไปหน้าคลังของฉันเลย
+                    showSection('warehouse');
                 } else { alert("❌ " + result.message); loadRewards(); }
-            } catch (e) { showError("ตอนกดแลกรางวัล", e); }
+            } catch (e) { alert("Redeem error"); }
         }
 
         function openUpdateForm() {
             showSection('update');
             document.getElementById('updFullName').value = currentUserData.fullName;
             document.getElementById('updPhone').value = currentUserData.phone;
+            
+            // แปลง format วันที่จาก DB กลับเป็น yyyy-mm-dd สำหรับ input type="date"
+            if(currentUserData.dob) {
+                try {
+                    let d = new Date(currentUserData.dob);
+                    document.getElementById('updDob').value = d.toISOString().split('T')[0];
+                } catch(e) {}
+            }
+            document.getElementById('updAddress').value = currentUserData.address;
         }
 
         async function saveUpdate() {
-            try {
-                const newName = document.getElementById('updFullName').value; const newPhone = document.getElementById('updPhone').value;
-                if(!newName || !newPhone) { alert("กรอกข้อมูลให้ครบครับ"); return; }
-                const profile = await liff.getProfile();
-                const response = await fetch(WEB_APP_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'updateUser', lineUserId: profile.userId, displayName: profile.displayName, fullName: newName, phone: newPhone }) });
-                const result = await response.json();
-                if(result.success) {
-                    document.getElementById('userName').innerText = result.newFullName;
-                    currentUserData.fullName = result.newFullName; currentUserData.phone = newPhone;
-                    showSection('profile');
-                }
-            } catch (e) { showError("ตอนบันทึกข้อมูล", e); }
-        }
-
-        async function dailyCheckIn() {
+            const fn = document.getElementById('updFullName').value; const ph = document.getElementById('updPhone').value;
+            const dob = document.getElementById('updDob').value; const addr = document.getElementById('updAddress').value;
+            if(!fn || !ph) { alert("กรุณากรอกชื่อและเบอร์โทรให้ครบถ้วนครับ"); return; }
+            
+            document.getElementById('updateSection').innerHTML = "<p>กำลังบันทึก...</p>";
             try {
                 const profile = await liff.getProfile();
-                const response = await fetch(WEB_APP_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'addPoints', lineUserId: profile.userId, points: 10, desc: 'เช็คอินรายวัน' }) });
-                const result = await response.json();
+                const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'updateUser', lineUserId: profile.userId, displayName: profile.displayName, fullName: fn, phone: ph, dob: dob, address: addr }) });
+                const result = await res.json();
                 if(result.success) {
-                    alert("เช็คอินสำเร็จ!");
-                    document.getElementById('userPoints').innerText = result.newPoints; document.getElementById('userLevel').innerText = result.level;
+                    location.reload(); // รีเฟรชเพื่อดึงข้อมูลใหม่ที่สวยงาม
                 }
-            } catch (e) { showError("ตอนเช็คอิน", e); }
+            } catch (e) { alert("Save error"); }
         }
 
         async function register() {
+            const fn = document.getElementById('regFullName').value; const ph = document.getElementById('regPhone').value;
+            const dob = document.getElementById('regDob').value; const addr = document.getElementById('regAddress').value;
+            if(!fn || !ph) { alert("กรุณากรอกชื่อและเบอร์โทรให้ครบถ้วนครับ"); return; }
+            
+            document.getElementById('registerSection').innerHTML = "<p>กำลังบันทึก...</p>";
             try {
-                const f = document.getElementById('regFullName').value; const p = document.getElementById('regPhone').value;
-                if(!f || !p) { alert("กรอกข้อมูลให้ครบครับ"); return; }
-                document.getElementById('registerSection').innerHTML = "<p>กำลังบันทึกข้อมูล...</p>";
                 const profile = await liff.getProfile();
-                const response = await fetch(WEB_APP_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'register', lineUserId: profile.userId, displayName: profile.displayName, fullName: f, phone: p }) });
-                const result = await response.json();
-                if(result.success) { alert("สมัครสำเร็จ!"); location.reload(); }
-            } catch (e) { showError("ตอนสมัคร", e); }
+                const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'register', lineUserId: profile.userId, displayName: profile.displayName, fullName: fn, phone: ph, dob: dob, address: addr }) });
+                const result = await res.json();
+                if(result.success) { alert("ยินดีต้อนรับสู่ Láor Skincare ครับ!"); location.reload(); }
+            } catch (e) { alert("Register error"); }
         }
 
         main();
