@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Láor Admin Management</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 12px; max-width: 600px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .order-item { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; flex-direction: column; gap: 10px; }
+        input { padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 100px; }
+        button { background: #8db596; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; }
+        .btn-approve { background: #d4af37; }
+        #loader { text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>รายการรออนุมัติแต้ม 🛍️</h2>
+        <div id="loader">กำลังโหลดข้อมูล...</div>
+        <div id="pendingList"></div>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbxluo202bUXgl5mBkmRL0tQiBdlX06VhVP82AovRPVt0597Y5I1UMZV8-cEeb2dZ_kpVA/exec";
+
+        async function loadPending() {
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPendingOrders' }) });
+                const result = await res.json();
+                document.getElementById('loader').style.display = "none";
+                
+                let html = "";
+                if(result.orders.length > 0) {
+                    result.orders.forEach(o => {
+                        html += `
+                        <div class="order-item" id="row-${o.row}">
+                            <div><b>เลขคำสั่งซื้อ:</b> ${o.orderNum}</div>
+                            <div><b>UID:</b> ${o.uid}</div>
+                            <div>
+                                ให้แต้ม: <input type="number" id="pts-${o.row}" value="100"> 
+                                <button class="btn-approve" onclick="approve('${o.row}', '${o.uid}', '${o.orderNum}')">อนุมัติแต้ม</button>
+                            </div>
+                        </div>`;
+                    });
+                } else { html = "<p>ไม่มีรายการรอตรวจสอบครับ</p>"; }
+                document.getElementById('pendingList').innerHTML = html;
+            } catch (e) { alert("Load error"); }
+        }
+
+        async function approve(row, uid, orderNum) {
+            const pts = document.getElementById(`pts-${row}`).value;
+            if(!confirm(`ยืนยันการให้ ${pts} แต้ม สำหรับออเดอร์ ${orderNum}?`)) return;
+
+            try {
+                const res = await fetch(API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: 'approveOrder', row: row, uid: uid, points: pts, orderNum: orderNum }) 
+                });
+                const result = await res.json();
+                if(result.success) {
+                    alert(result.message);
+                    document.getElementById(`row-${row}`).style.display = "none";
+                }
+            } catch (e) { alert("Approve error"); }
+        }
+
+        loadPending();
+    </script>
+</body>
+</html>
