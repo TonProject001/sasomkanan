@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioBloom Admin Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #2c3e50; color: white; }
+        .container { background: white; color: #333; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 400px; margin: auto; }
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+        .status-msg { padding: 15px; border-radius: 8px; margin-top: 20px; font-weight: bold; display: none; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        button { background: #3498db; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h2>Admin Scanner</h2>
+    <div class="container">
+        <p>สแกน QR Code ของลูกค้าเพื่อส่งมอบของ</p>
+        
+        <div id="reader"></div>
+        
+        <div id="statusBox" class="status-msg"></div>
+        
+        <button onclick="startScanner()">เปิดกล้องสแกน</button>
+        <button style="background:#95a5a6;" onclick="location.reload()">ล้างค่าใหม่</button>
+    </div>
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxluo202bUXgl5mBkmRL0tQiBdlX06VhVP82AovRPVt0597Y5I1UMZV8-cEeb2dZ_kpVA/exec";
+        let html5QrCode;
+
+        function startScanner() {
+            html5QrCode = new html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+        }
+
+        async function onScanSuccess(decodedText, decodedResult) {
+            // หยุดสแกนชั่วคราวเมื่อเจอ QR
+            await html5QrCode.stop();
+            
+            showStatus("กำลังตรวจสอบรหัส: " + decodedText, "success");
+
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST', redirect: 'follow',
+                    body: JSON.stringify({ action: 'updateClaimStatus', txId: decodedText })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus(`✅ ${result.message}<br>ของรางวัล: ${result.rewardName}`, "success");
+                } else {
+                    showStatus(`❌ ${result.message}`, "error");
+                }
+            } catch (e) {
+                showStatus("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์", "error");
+            }
+        }
+
+        function showStatus(msg, type) {
+            const box = document.getElementById('statusBox');
+            box.style.display = "block";
+            box.className = "status-msg " + type;
+            box.innerHTML = msg;
+        }
+    </script>
+</body>
+</html>
