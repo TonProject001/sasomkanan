@@ -7,14 +7,13 @@
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        /* ปรับ Theme ให้ดูพรีเมียมเข้ากับสกินแคร์ */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 15px; background-color: #fcf9f5; margin: 0; color: #4a4a4a; }
         .card { background: white; padding: 25px 20px; border-radius: 20px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); margin-bottom: 20px;}
-        h2 { color: #d4af37; margin-top: 0;} /* สีทองหรูหรา */
+        h2 { color: #d4af37; margin-top: 0;} 
         
         button { color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 15px; margin-top: 10px; width: 100%; font-weight: bold;}
-        .btn-green { background-color: #8db596; } /* สีเขียวละมุน */
-        .btn-blue { background-color: #b0a392; } /* สีน้ำตาล/เทาอ่อน */
+        .btn-green { background-color: #8db596; } 
+        .btn-blue { background-color: #b0a392; } 
         .btn-outline { background-color: transparent; border: 2px solid #b0a392; color: #b0a392; }
         
         input, textarea { padding: 12px; width: 100%; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; box-sizing: border-box; font-family: inherit; }
@@ -27,23 +26,20 @@
         .nav-menu { display: flex; gap: 8px; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; overflow-x: auto;}
         .nav-btn { flex: 1; padding: 10px 5px; border-radius: 8px; margin-top: 0; font-size: 14px; white-space: nowrap;}
         
-        /* สไตล์ของรางวัลและคลัง */
         .list-item { border: 1px solid #eee; border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.02);}
         .item-name { font-weight: bold; font-size: 17px; color: #333; margin-bottom: 5px;}
         .item-detail { font-size: 13px; color: #777; margin: 8px 0; line-height: 1.4;}
         
-        /* ควบคุมรูปภาพของรางวัล (โหลดไว ไม่กินพื้นที่) */
-        .reward-img { width: 100%; height: 160px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; background-color: #f4f4f4;}
+        /* ปรับให้ภาพเป็น 1:1 จัตุรัส รองรับขนาด 1000x1000 พอดีเป๊ะ */
+        .reward-img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 8px; margin-bottom: 12px; background-color: #f4f4f4;}
         .promo-expiry { font-size: 12px; color: #e67e22; font-weight: bold; margin-top: 5px; }
         
-        /* Tracking Number */
         .tracking-box { margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 8px; border-left: 3px solid #d4af37; font-size: 13px; font-family: monospace; color: #333;}
         
         .status-badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; margin-bottom: 10px;}
         .status-wait { background-color: #fdf3d8; color: #d4ac0d; }
         .status-done { background-color: #e8f5e9; color: #2e7d32; }
 
-        /* ส่วนกรอกหมายเลขคำสั่งซื้อ */
         .order-submit-box { background: #fafafa; padding: 15px; border-radius: 12px; border: 1px dashed #ccc; margin-top: 15px;}
     </style>
 </head>
@@ -69,6 +65,12 @@
                 <p style="margin-top:0; font-size:14px; font-weight:bold;">รับแต้มจากการสั่งซื้อ 🛍️</p>
                 <input type="text" id="orderInput" placeholder="ระบุหมายเลขคำสั่งซื้อของคุณ" style="margin-bottom: 10px;">
                 <button class="btn-green" onclick="submitOrder()">แจ้งตรวจสอบเพื่อรับแต้ม</button>
+                
+                <p style="font-size:13px; cursor:pointer; color:#b0a392; text-decoration:underline; margin-top:15px; font-weight:bold;" onclick="toggleOrderHistory()">ดูประวัติการส่งเลขสั่งซื้อของฉัน ⬇️</p>
+                
+                <div id="orderHistoryList" class="hidden" style="text-align:left; font-size:13px; margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+                    กำลังโหลดประวัติ...
+                </div>
             </div>
 
             <button class="btn-blue" onclick="openUpdateForm()">แก้ไขข้อมูล / ที่อยู่จัดส่ง</button>
@@ -105,7 +107,6 @@
     </div>
 
     <script>
-        // เปลี่ยน URL ให้เป็นของคุณเหมือนเดิม
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxluo202bUXgl5mBkmRL0tQiBdlX06VhVP82AovRPVt0597Y5I1UMZV8-cEeb2dZ_kpVA/exec";
         const LIFF_ID = "2009809903-g6N3sM8C";
         let currentUserData = {};
@@ -170,7 +171,6 @@
                 if (result.success && result.rewards.length > 0) {
                     let html = "";
                     result.rewards.forEach(r => {
-                        // โชว์รูปถ้าระบุ URL ไว้
                         let imgHtml = r.imgUrl ? `<img src="${r.imgUrl}" class="reward-img" alt="poster">` : '';
                         let expiryHtml = r.expiry ? `<div class="promo-expiry">⏳ หมดเขต: ${r.expiry}</div>` : '';
                         
@@ -202,7 +202,6 @@
                         let isWait = (item.status !== 'รับแล้ว' && item.status !== 'จัดส่งแล้ว');
                         let statusClass = isWait ? 'status-wait' : 'status-done';
                         
-                        // ฟีเจอร์ Tracking Number
                         let trackingHtml = item.tracking ? `
                             <div class="tracking-box">
                                 📦 <b>Tracking No:</b><br>${item.tracking}
@@ -233,14 +232,50 @@
                 const result = await res.json();
                 if(result.success) {
                     alert(result.message);
-                    document.getElementById('orderInput').value = ""; // ล้างช่อง
+                    document.getElementById('orderInput').value = ""; 
+                    // โหลดประวัติใหม่ถ้าระบบเปิดอยู่
+                    if(isHistoryVisible) toggleOrderHistory(); 
                 }
             } catch (e) { alert("ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่"); }
             btn.disabled = false; btn.innerText = "แจ้งตรวจสอบเพื่อรับแต้ม";
         }
 
+        // --- ฟังก์ชันดึงประวัติการส่งเลขคำสั่งซื้อ ---
+        let isHistoryVisible = false;
+        async function toggleOrderHistory() {
+            const listDiv = document.getElementById('orderHistoryList');
+            // สลับการซ่อน/โชว์
+            if (isHistoryVisible) {
+                listDiv.classList.add('hidden');
+                isHistoryVisible = false;
+                return;
+            }
+            
+            listDiv.classList.remove('hidden');
+            listDiv.innerHTML = "กำลังดึงข้อมูล...";
+            isHistoryVisible = true;
+            
+            try {
+                const profile = await liff.getProfile();
+                const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'getOrderHistory', lineUserId: profile.userId }) });
+                const result = await res.json();
+                
+                if(result.success && result.history.length > 0) {
+                    let html = "";
+                    result.history.forEach(h => {
+                        let statusColor = h.status === "รอตรวจสอบ" ? "#d4ac0d" : "#2e7d32";
+                        html += `<div style="margin-bottom:8px; padding:8px; background:white; border-radius:5px; border:1px solid #eee;">
+                                    <b>เลขคำสั่งซื้อ:</b> ${h.orderNum}<br>
+                                    <span style="color:#888;">วันที่ส่ง: ${h.date}</span><br>
+                                    <b>สถานะ: <span style="color:${statusColor}">${h.status}</span></b>
+                                 </div>`;
+                    });
+                    listDiv.innerHTML = html;
+                } else { listDiv.innerHTML = "คุณยังไม่เคยส่งหมายเลขคำสั่งซื้อครับ"; }
+            } catch(e) { listDiv.innerHTML = "โหลดข้อมูลไม่สำเร็จ"; }
+        }
+
         async function redeemItem(rId, rName, points) {
-            // เช็คว่ากรอกที่อยู่หรือยัง
             if(!currentUserData.address || currentUserData.address.trim() === "") {
                 alert("กรุณาเพิ่ม 'ที่อยู่จัดส่ง' ในหน้าข้อมูลส่วนตัว ก่อนทำการแลกของรางวัลครับ");
                 openUpdateForm();
@@ -265,8 +300,6 @@
             showSection('update');
             document.getElementById('updFullName').value = currentUserData.fullName;
             document.getElementById('updPhone').value = currentUserData.phone;
-            
-            // แปลง format วันที่จาก DB กลับเป็น yyyy-mm-dd สำหรับ input type="date"
             if(currentUserData.dob) {
                 try {
                     let d = new Date(currentUserData.dob);
@@ -286,9 +319,7 @@
                 const profile = await liff.getProfile();
                 const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'updateUser', lineUserId: profile.userId, displayName: profile.displayName, fullName: fn, phone: ph, dob: dob, address: addr }) });
                 const result = await res.json();
-                if(result.success) {
-                    location.reload(); // รีเฟรชเพื่อดึงข้อมูลใหม่ที่สวยงาม
-                }
+                if(result.success) { location.reload(); }
             } catch (e) { alert("Save error"); }
         }
 
