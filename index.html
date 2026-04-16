@@ -7,126 +7,159 @@
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f4f7f6; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        button { background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; width: 100%;}
-        input { padding: 10px; width: 80%; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;}
+        button { color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; width: 100%;}
+        .btn-green { background-color: #28a745; }
+        .btn-blue { background-color: #007bff; }
+        .btn-gray { background-color: #6c757d; }
+        input { padding: 10px; width: 80%; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; box-sizing: border-box; }
         .hidden { display: none; }
         #errorLog { color: red; text-align: left; background: #ffe6e6; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 14px; word-wrap: break-word;}
         #loader { font-weight: bold; color: #0056b3; margin-bottom: 15px; }
+        .expire-text { font-size: 13px; color: #d9534f; margin-top: -10px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
     <div class="card">
         <h2 id="brandName">BioBloom Member</h2>
-        
-        <div id="loader">กำลังเริ่มต้นระบบ...</div>
-        
+        <div id="loader">กำลังตรวจสอบข้อมูลสมาชิก...</div>
         <div id="errorLog" class="hidden"></div>
         
         <div id="profileSection" class="hidden">
-            <p>สวัสดีคุณ: <span id="userName">-</span></p>
-            <p>ระดับสมาชิก: <b id="userLevel">-</b></p>
-            <p>คะแนนสะสมปัจจุบัน: <h1 id="userPoints">0</h1> แต้ม</p>
-            <button onclick="dailyCheckIn()">เช็คอินรับแต้มรายวัน (+10)</button>
+            <p>สวัสดีคุณ: <b id="userName">-</b></p>
+            <p>ระดับสมาชิก: <span id="userLevel">-</span></p>
+            <p>คะแนนสะสมปัจจุบันของคุณคือ: <h1 id="userPoints" style="margin: 5px 0;">0</h1></p>
+            <p id="expiryNotice" class="expire-text hidden"></p>
+            
+            <button class="btn-green" onclick="dailyCheckIn()">เช็คอินรับแต้มรายวัน (+10)</button>
+            <button class="btn-blue" onclick="openUpdateForm()">อัปเดตข้อมูลส่วนตัว</button>
         </div>
 
         <div id="registerSection" class="hidden">
             <p>ยินดีต้อนรับ! กรุณาลงทะเบียน</p>
             <input type="text" id="regFullName" placeholder="ชื่อ-นามสกุล"><br><br>
             <input type="tel" id="regPhone" placeholder="เบอร์โทรศัพท์"><br><br>
-            <button onclick="register()">สมัครสมาชิกเลย</button>
+            <button class="btn-green" onclick="register()">สมัครสมาชิกเลย</button>
+        </div>
+
+        <div id="updateSection" class="hidden">
+            <p>แก้ไขข้อมูลส่วนตัว</p>
+            <input type="text" id="updFullName" placeholder="ชื่อ-นามสกุล"><br><br>
+            <input type="tel" id="updPhone" placeholder="เบอร์โทรศัพท์"><br><br>
+            <button class="btn-blue" onclick="saveUpdate()">บันทึกข้อมูล</button>
+            <button class="btn-gray" onclick="closeUpdateForm()">ยกเลิก</button>
         </div>
     </div>
 
     <script>
+        // --- ค่าเดิมของคุณ (ไม่ต้องเปลี่ยน) ---
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxluo202bUXgl5mBkmRL0tQiBdlX06VhVP82AovRPVt0597Y5I1UMZV8-cEeb2dZ_kpVA/exec";
         const LIFF_ID = "2009809903-g6N3sM8C";
 
-        // ฟังก์ชันสำหรับโชว์ Error บนหน้าจอ
+        // ตัวแปรเก็บข้อมูลชั่วคราวเพื่อเอาไปใส่ในช่องแก้ไข
+        let currentUserData = {};
+
         function showError(step, err) {
             const errDiv = document.getElementById('errorLog');
             errDiv.classList.remove('hidden');
-            errDiv.innerHTML += `<b>❌ พังที่ขั้นตอน: ${step}</b><br>สาเหตุ: ${err.message || err}<br><br>`;
-            document.getElementById('loader').innerText = "ระบบหยุดทำงานเนื่องจากข้อผิดพลาด";
+            errDiv.innerHTML += `<b>❌ เกิดข้อผิดพลาด:</b> ${step}<br>สาเหตุ: ${err.message || err}<br><br>`;
+            document.getElementById('loader').innerText = "";
         }
 
         async function main() {
             try {
-                document.getElementById('loader').innerText = "1. กำลังเชื่อมต่อ LINE LIFF...";
                 await liff.init({ liffId: LIFF_ID });
-                
-                if (!liff.isLoggedIn()) {
-                    document.getElementById('loader').innerText = "กำลังเข้าสู่ระบบ LINE...";
-                    liff.login();
-                    return;
-                } 
-                
-                document.getElementById('loader').innerText = "2. กำลังดึงข้อมูลโปรไฟล์จาก LINE...";
+                if (!liff.isLoggedIn()) { liff.login(); return; } 
                 const profile = await liff.getProfile();
-                
-                document.getElementById('loader').innerText = "3. กำลังเชื่อมต่อ Google Sheets...";
                 await checkUser(profile.userId, profile.displayName);
-
-            } catch (e) {
-                showError("การเชื่อมต่อ LINE (LIFF Init)", e);
-            }
+            } catch (e) { showError("การเชื่อมต่อระบบ", e); }
         }
 
         async function checkUser(uid, displayName) {
             try {
                 const response = await fetch(WEB_APP_URL, {
-                    method: 'POST',
-                    redirect: 'follow',
+                    method: 'POST', redirect: 'follow',
                     body: JSON.stringify({ action: 'getUser', lineUserId: uid })
                 });
-                
                 const result = await response.json();
-                
                 document.getElementById('loader').classList.add('hidden');
                 
                 if (result.exists) {
+                    currentUserData = result; // เก็บข้อมูลไว้ใช้ตอนกดแก้ไข
+                    
                     document.getElementById('profileSection').classList.remove('hidden');
-                    document.getElementById('userName').innerText = result.name;
+                    // ถ้าชื่อเต็มไม่มี ให้ใช้ชื่อไลน์ (displayName) แสดงผลแทนเพื่อไม่ให้ชื่อหาย
+                    document.getElementById('userName').innerText = result.fullName || result.displayName;
                     document.getElementById('userPoints').innerText = result.points;
                     document.getElementById('userLevel').innerText = result.level;
+
+                    // แสดงวันหมดอายุ (ถ้ามีแต้มที่จะหมดอายุ)
+                    const expNotice = document.getElementById('expiryNotice');
+                    if (result.expiringPoints > 0) {
+                        expNotice.innerText = `(จะมี ${result.expiringPoints} คะแนนที่จะหมดอายุในวัน ${result.expiringDateText})`;
+                        expNotice.classList.remove('hidden');
+                    } else {
+                        expNotice.classList.add('hidden');
+                    }
                 } else {
                     document.getElementById('registerSection').classList.remove('hidden');
                 }
-            } catch (e) {
-                showError("การเชื่อมต่อ Google Sheets (Fetch API)", e);
-            }
+            } catch (e) { showError("การโหลดข้อมูลสมาชิก", e); }
         }
 
-        async function register() {
-            try {
-                const fullName = document.getElementById('regFullName').value;
-                const phone = document.getElementById('regPhone').value;
-                if(!fullName || !phone) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
+        // --- ส่วนควบคุมการแสดงผลหน้าต่าง ---
+        function openUpdateForm() {
+            document.getElementById('profileSection').classList.add('hidden');
+            document.getElementById('updateSection').classList.remove('hidden');
+            // ดึงข้อมูลเดิมมาใส่ในช่องรอไว้เลย
+            document.getElementById('updFullName').value = currentUserData.fullName;
+            document.getElementById('updPhone').value = currentUserData.phone;
+        }
 
-                document.getElementById('loader').classList.remove('hidden');
-                document.getElementById('loader').innerText = "กำลังบันทึกข้อมูล...";
+        function closeUpdateForm() {
+            document.getElementById('updateSection').classList.add('hidden');
+            document.getElementById('profileSection').classList.remove('hidden');
+        }
+
+        // --- ระบบบันทึกข้อมูลที่แก้ไข ---
+        async function saveUpdate() {
+            try {
+                const newName = document.getElementById('updFullName').value;
+                const newPhone = document.getElementById('updPhone').value;
+                if(!newName || !newPhone) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
+
+                document.getElementById('updateSection').innerHTML = "<p>กำลังบันทึกข้อมูล...</p>";
                 
                 const profile = await liff.getProfile();
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST', redirect: 'follow',
-                    body: JSON.stringify({ action: 'register', lineUserId: profile.userId, displayName: profile.displayName, fullName: fullName, phone: phone })
+                    body: JSON.stringify({ action: 'updateUser', lineUserId: profile.userId, displayName: profile.displayName, fullName: newName, phone: newPhone })
                 });
                 
                 const result = await response.json();
                 if(result.success) {
-                    alert("สมัครสมาชิกสำเร็จ!");
-                    location.reload();
+                    // อัปเดตตัวหนังสือบนหน้าจอทันที ไม่ต้องรีเฟรชหน้า
+                    document.getElementById('userName').innerText = result.newFullName;
+                    currentUserData.fullName = result.newFullName;
+                    currentUserData.phone = newPhone;
+                    
+                    // ปิดหน้าแก้ไข กลับไปหน้าโปรไฟล์
+                    document.getElementById('updateSection').classList.add('hidden');
+                    document.getElementById('profileSection').classList.remove('hidden');
+                    // คืนฟอร์มเดิมกลับมาเผื่อกดแก้ใหม่
+                    document.getElementById('updateSection').innerHTML = `
+                        <p>แก้ไขข้อมูลส่วนตัว</p>
+                        <input type="text" id="updFullName"><br><br>
+                        <input type="tel" id="updPhone"><br><br>
+                        <button class="btn-blue" onclick="saveUpdate()">บันทึกข้อมูล</button>
+                        <button class="btn-gray" onclick="closeUpdateForm()">ยกเลิก</button>`;
                 }
-            } catch (e) {
-                showError("ตอนกดสมัครสมาชิก", e);
-            }
+            } catch (e) { showError("ตอนบันทึกข้อมูลแก้ไข", e); }
         }
 
+        // --- ระบบเช็คอิน (ที่ปรับให้ไม่ไปลบชื่อลูกค้า) ---
         async function dailyCheckIn() {
             try {
-                document.getElementById('loader').classList.remove('hidden');
-                document.getElementById('loader').innerText = "กำลังบันทึกคะแนน...";
-                
                 const profile = await liff.getProfile();
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST', redirect: 'follow',
@@ -136,13 +169,27 @@
                 const result = await response.json();
                 if(result.success) {
                     alert("เช็คอินสำเร็จ! ได้ 10 แต้ม");
+                    // เปลี่ยนแค่แต้มและเลเวล ชื่อจะไม่หาย
                     document.getElementById('userPoints').innerText = result.newPoints;
                     document.getElementById('userLevel').innerText = result.level;
-                    document.getElementById('loader').classList.add('hidden');
                 }
-            } catch (e) {
-                showError("ตอนกดเช็คอิน", e);
-            }
+            } catch (e) { showError("ตอนกดเช็คอิน", e); }
+        }
+
+        async function register() {
+            try {
+                const fullName = document.getElementById('regFullName').value;
+                const phone = document.getElementById('regPhone').value;
+                if(!fullName || !phone) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
+                document.getElementById('registerSection').innerHTML = "<p>กำลังบันทึกข้อมูล...</p>";
+                const profile = await liff.getProfile();
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST', redirect: 'follow',
+                    body: JSON.stringify({ action: 'register', lineUserId: profile.userId, displayName: profile.displayName, fullName: fullName, phone: phone })
+                });
+                const result = await response.json();
+                if(result.success) { alert("สมัครสมาชิกสำเร็จ!"); location.reload(); }
+            } catch (e) { showError("ตอนกดสมัครสมาชิก", e); }
         }
 
         main();
