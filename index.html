@@ -12,11 +12,19 @@
         .btn-green { background-color: #28a745; }
         .btn-blue { background-color: #007bff; }
         .btn-gray { background-color: #6c757d; }
+        .btn-outline { background-color: transparent; border: 2px solid #007bff; color: #007bff; }
         input { padding: 10px; width: 80%; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; box-sizing: border-box; }
         .hidden { display: none; }
-        #errorLog { color: red; text-align: left; background: #ffe6e6; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 14px; word-wrap: break-word;}
+        #errorLog { color: red; text-align: left; background: #ffe6e6; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 14px;}
         #loader { font-weight: bold; color: #0056b3; margin-bottom: 15px; }
         .expire-text { font-size: 13px; color: #d9534f; margin-top: -10px; margin-bottom: 15px; }
+        
+        /* สไตล์สำหรับเมนูและรายการของรางวัล */
+        .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .nav-btn { flex: 1; padding: 10px 0; border-radius: 8px; font-weight: bold; margin-top: 0;}
+        .reward-item { border: 1px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+        .reward-name { font-weight: bold; font-size: 16px; color: #333;}
+        .reward-detail { font-size: 14px; color: #666; margin: 5px 0;}
     </style>
 </head>
 <body>
@@ -24,6 +32,11 @@
         <h2 id="brandName">BioBloom Member</h2>
         <div id="loader">กำลังตรวจสอบข้อมูลสมาชิก...</div>
         <div id="errorLog" class="hidden"></div>
+
+        <div id="navSection" class="nav-menu hidden">
+            <button class="nav-btn btn-blue" id="btnProfile" onclick="showProfile()">หน้าหลัก</button>
+            <button class="nav-btn btn-outline" id="btnRewards" onclick="showRewards()">แลกของรางวัล</button>
+        </div>
         
         <div id="profileSection" class="hidden">
             <p>สวัสดีคุณ: <b id="userName">-</b></p>
@@ -34,6 +47,9 @@
             <button class="btn-green" onclick="dailyCheckIn()">เช็คอินรับแต้มรายวัน (+10)</button>
             <button class="btn-blue" onclick="openUpdateForm()">อัปเดตข้อมูลส่วนตัว</button>
         </div>
+
+        <div id="rewardsSection" class="hidden">
+            <div id="rewardsList"></div> </div>
 
         <div id="registerSection" class="hidden">
             <p>ยินดีต้อนรับ! กรุณาลงทะเบียน</p>
@@ -52,11 +68,8 @@
     </div>
 
     <script>
-        // --- ค่าเดิมของคุณ (ไม่ต้องเปลี่ยน) ---
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxluo202bUXgl5mBkmRL0tQiBdlX06VhVP82AovRPVt0597Y5I1UMZV8-cEeb2dZ_kpVA/exec";
         const LIFF_ID = "2009809903-g6N3sM8C";
-
-        // ตัวแปรเก็บข้อมูลชั่วคราวเพื่อเอาไปใส่ในช่องแก้ไข
         let currentUserData = {};
 
         function showError(step, err) {
@@ -78,22 +91,20 @@
         async function checkUser(uid, displayName) {
             try {
                 const response = await fetch(WEB_APP_URL, {
-                    method: 'POST', redirect: 'follow',
-                    body: JSON.stringify({ action: 'getUser', lineUserId: uid })
+                    method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'getUser', lineUserId: uid })
                 });
                 const result = await response.json();
                 document.getElementById('loader').classList.add('hidden');
                 
                 if (result.exists) {
-                    currentUserData = result; // เก็บข้อมูลไว้ใช้ตอนกดแก้ไข
+                    currentUserData = result; 
+                    document.getElementById('navSection').classList.remove('hidden'); // เปิดโชว์เมนู
+                    showProfile(); // เปิดหน้าโปรไฟล์เป็นหน้าแรก
                     
-                    document.getElementById('profileSection').classList.remove('hidden');
-                    // ถ้าชื่อเต็มไม่มี ให้ใช้ชื่อไลน์ (displayName) แสดงผลแทนเพื่อไม่ให้ชื่อหาย
                     document.getElementById('userName').innerText = result.fullName || result.displayName;
                     document.getElementById('userPoints').innerText = result.points;
                     document.getElementById('userLevel').innerText = result.level;
 
-                    // แสดงวันหมดอายุ (ถ้ามีแต้มที่จะหมดอายุ)
                     const expNotice = document.getElementById('expiryNotice');
                     if (result.expiringPoints > 0) {
                         expNotice.innerText = `(จะมี ${result.expiringPoints} คะแนนที่จะหมดอายุในวัน ${result.expiringDateText})`;
@@ -107,69 +118,116 @@
             } catch (e) { showError("การโหลดข้อมูลสมาชิก", e); }
         }
 
-        // --- ส่วนควบคุมการแสดงผลหน้าต่าง ---
+        // --- ระบบสลับหน้าต่าง (เมนู) ---
+        function showProfile() {
+            document.getElementById('profileSection').classList.remove('hidden');
+            document.getElementById('rewardsSection').classList.add('hidden');
+            document.getElementById('updateSection').classList.add('hidden');
+            // เปลี่ยนสีปุ่มเมนูให้รู้ว่าอยู่หน้าไหน
+            document.getElementById('btnProfile').className = "nav-btn btn-blue";
+            document.getElementById('btnRewards').className = "nav-btn btn-outline";
+        }
+
+        async function showRewards() {
+            document.getElementById('profileSection').classList.add('hidden');
+            document.getElementById('rewardsSection').classList.remove('hidden');
+            document.getElementById('updateSection').classList.add('hidden');
+            document.getElementById('btnProfile').className = "nav-btn btn-outline";
+            document.getElementById('btnRewards').className = "nav-btn btn-blue";
+
+            document.getElementById('rewardsList').innerHTML = "<p>กำลังโหลดรายการของรางวัล...</p>";
+
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'getRewards' })
+                });
+                const result = await response.json();
+                
+                if (result.success && result.rewards.length > 0) {
+                    let html = "";
+                    result.rewards.forEach(r => {
+                        html += `
+                        <div class="reward-item">
+                            <div class="reward-name">🎁 ${r.name}</div>
+                            <div class="reward-detail">ใช้ ${r.points} แต้ม | เหลือ ${r.stock} สิทธิ์</div>
+                            <button class="btn-green" onclick="redeemItem('${r.id}', '${r.name}', ${r.points})">แลกของรางวัล</button>
+                        </div>`;
+                    });
+                    document.getElementById('rewardsList').innerHTML = html;
+                } else {
+                    document.getElementById('rewardsList').innerHTML = "<p>ยังไม่มีของรางวัลให้แลกในขณะนี้ครับ</p>";
+                }
+            } catch (e) { showError("โหลดของรางวัล", e); }
+        }
+
+        // --- ระบบกดแลกของรางวัล ---
+        async function redeemItem(rId, rName, points) {
+            // เด้งถามเพื่อความชัวร์ก่อนแลก
+            if(!confirm(`ยืนยันการใช้ ${points} แต้ม เพื่อแลก "${rName}" ใช่หรือไม่?`)) return;
+
+            document.getElementById('rewardsList').innerHTML = "<p>กำลังดำเนินการแลกของรางวัล...</p>";
+            try {
+                const profile = await liff.getProfile();
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST', redirect: 'follow', 
+                    body: JSON.stringify({ 
+                        action: 'redeem', lineUserId: profile.userId, 
+                        rewardId: rId, rewardName: rName, points: points 
+                    })
+                });
+                const result = await response.json();
+                
+                if(result.success) {
+                    alert("🎉 แลกของรางวัลสำเร็จ!");
+                    // อัปเดตแต้มบนหน้าจอมือถือทันที
+                    document.getElementById('userPoints').innerText = result.newPoints;
+                    showProfile(); // กลับไปหน้าแรกเพื่อโชว์แต้มที่ลดลง
+                } else {
+                    alert("❌ ไม่สามารถแลกได้: " + result.message);
+                    showRewards(); // โหลดหน้าของรางวัลใหม่
+                }
+            } catch (e) { showError("ตอนกดแลกรางวัล", e); }
+        }
+
+        // --- ฟังก์ชันเดิม (ไม่ต้องแก้) ---
         function openUpdateForm() {
             document.getElementById('profileSection').classList.add('hidden');
             document.getElementById('updateSection').classList.remove('hidden');
-            // ดึงข้อมูลเดิมมาใส่ในช่องรอไว้เลย
             document.getElementById('updFullName').value = currentUserData.fullName;
             document.getElementById('updPhone').value = currentUserData.phone;
         }
+        function closeUpdateForm() { showProfile(); }
 
-        function closeUpdateForm() {
-            document.getElementById('updateSection').classList.add('hidden');
-            document.getElementById('profileSection').classList.remove('hidden');
-        }
-
-        // --- ระบบบันทึกข้อมูลที่แก้ไข ---
         async function saveUpdate() {
             try {
                 const newName = document.getElementById('updFullName').value;
                 const newPhone = document.getElementById('updPhone').value;
                 if(!newName || !newPhone) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
-
                 document.getElementById('updateSection').innerHTML = "<p>กำลังบันทึกข้อมูล...</p>";
-                
                 const profile = await liff.getProfile();
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST', redirect: 'follow',
                     body: JSON.stringify({ action: 'updateUser', lineUserId: profile.userId, displayName: profile.displayName, fullName: newName, phone: newPhone })
                 });
-                
                 const result = await response.json();
                 if(result.success) {
-                    // อัปเดตตัวหนังสือบนหน้าจอทันที ไม่ต้องรีเฟรชหน้า
                     document.getElementById('userName').innerText = result.newFullName;
-                    currentUserData.fullName = result.newFullName;
-                    currentUserData.phone = newPhone;
-                    
-                    // ปิดหน้าแก้ไข กลับไปหน้าโปรไฟล์
-                    document.getElementById('updateSection').classList.add('hidden');
-                    document.getElementById('profileSection').classList.remove('hidden');
-                    // คืนฟอร์มเดิมกลับมาเผื่อกดแก้ใหม่
-                    document.getElementById('updateSection').innerHTML = `
-                        <p>แก้ไขข้อมูลส่วนตัว</p>
-                        <input type="text" id="updFullName"><br><br>
-                        <input type="tel" id="updPhone"><br><br>
-                        <button class="btn-blue" onclick="saveUpdate()">บันทึกข้อมูล</button>
-                        <button class="btn-gray" onclick="closeUpdateForm()">ยกเลิก</button>`;
+                    currentUserData.fullName = result.newFullName; currentUserData.phone = newPhone;
+                    showProfile();
+                    document.getElementById('updateSection').innerHTML = `<p>แก้ไขข้อมูลส่วนตัว</p><input type="text" id="updFullName"><br><br><input type="tel" id="updPhone"><br><br><button class="btn-blue" onclick="saveUpdate()">บันทึกข้อมูล</button><button class="btn-gray" onclick="closeUpdateForm()">ยกเลิก</button>`;
                 }
-            } catch (e) { showError("ตอนบันทึกข้อมูลแก้ไข", e); }
+            } catch (e) { showError("ตอนบันทึกข้อมูล", e); }
         }
 
-        // --- ระบบเช็คอิน (ที่ปรับให้ไม่ไปลบชื่อลูกค้า) ---
         async function dailyCheckIn() {
             try {
                 const profile = await liff.getProfile();
                 const response = await fetch(WEB_APP_URL, {
-                    method: 'POST', redirect: 'follow',
-                    body: JSON.stringify({ action: 'addPoints', lineUserId: profile.userId, points: 10, desc: 'เช็คอินรายวัน' })
+                    method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'addPoints', lineUserId: profile.userId, points: 10, desc: 'เช็คอินรายวัน' })
                 });
-                
                 const result = await response.json();
                 if(result.success) {
                     alert("เช็คอินสำเร็จ! ได้ 10 แต้ม");
-                    // เปลี่ยนแค่แต้มและเลเวล ชื่อจะไม่หาย
                     document.getElementById('userPoints').innerText = result.newPoints;
                     document.getElementById('userLevel').innerText = result.level;
                 }
@@ -178,14 +236,12 @@
 
         async function register() {
             try {
-                const fullName = document.getElementById('regFullName').value;
-                const phone = document.getElementById('regPhone').value;
-                if(!fullName || !phone) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
+                const f = document.getElementById('regFullName').value; const p = document.getElementById('regPhone').value;
+                if(!f || !p) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
                 document.getElementById('registerSection').innerHTML = "<p>กำลังบันทึกข้อมูล...</p>";
                 const profile = await liff.getProfile();
                 const response = await fetch(WEB_APP_URL, {
-                    method: 'POST', redirect: 'follow',
-                    body: JSON.stringify({ action: 'register', lineUserId: profile.userId, displayName: profile.displayName, fullName: fullName, phone: phone })
+                    method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'register', lineUserId: profile.userId, displayName: profile.displayName, fullName: f, phone: p })
                 });
                 const result = await response.json();
                 if(result.success) { alert("สมัครสมาชิกสำเร็จ!"); location.reload(); }
