@@ -42,7 +42,7 @@
             // เปิดกล้องหลัง (environment)
             html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
             .catch(err => {
-                showStatus("❌ ไม่สามารถเข้าถึงกล้องได้: กรุณาอนุญาตการใช้งานกล้องในเบราว์เซอร์ของคุณ", "error");
+                showStatus(`❌ ไม่สามารถเข้าถึงกล้องได้<br><small>สาเหตุเชิงลึก: ${err}</small><br>กรุณากดจุด 3 จุดมุมขวาบน แล้วเลือก "เปิดในเบราว์เซอร์อื่น"`, "error");
             });
             
             // ซ่อนกล่องข้อความเมื่อเริ่มสแกนใหม่
