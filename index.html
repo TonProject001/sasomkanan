@@ -5,26 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BioBloom Member Club</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f4f7f6; }
+        body { font-family: sans-serif; text-align: center; padding: 15px; background-color: #f4f7f6; margin: 0; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;}
-        button { color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; width: 100%;}
+        button { color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 15px; margin-top: 10px; width: 100%;}
         .btn-green { background-color: #28a745; }
         .btn-blue { background-color: #007bff; }
         .btn-gray { background-color: #6c757d; }
         .btn-outline { background-color: transparent; border: 2px solid #007bff; color: #007bff; }
-        input { padding: 10px; width: 80%; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; box-sizing: border-box; }
+        input { padding: 10px; width: 100%; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; box-sizing: border-box; }
         .hidden { display: none; }
         #errorLog { color: red; text-align: left; background: #ffe6e6; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 14px;}
         #loader { font-weight: bold; color: #0056b3; margin-bottom: 15px; }
         .expire-text { font-size: 13px; color: #d9534f; margin-top: -10px; margin-bottom: 15px; }
         
-        /* สไตล์สำหรับเมนูและรายการของรางวัล */
-        .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
-        .nav-btn { flex: 1; padding: 10px 0; border-radius: 8px; font-weight: bold; margin-top: 0;}
-        .reward-item { border: 1px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
-        .reward-name { font-weight: bold; font-size: 16px; color: #333;}
-        .reward-detail { font-size: 14px; color: #666; margin: 5px 0;}
+        .nav-menu { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; overflow-x: auto;}
+        .nav-btn { flex: 1; padding: 8px 5px; border-radius: 8px; font-weight: bold; margin-top: 0; font-size: 14px; white-space: nowrap;}
+        
+        .list-item { border: 1px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+        .item-name { font-weight: bold; font-size: 16px; color: #333;}
+        .item-detail { font-size: 13px; color: #666; margin: 5px 0;}
+        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-bottom: 5px;}
+        .status-wait { background-color: #ffeeba; color: #856404; }
+        .status-done { background-color: #d4edda; color: #155724; }
+
+        /* หน้าต่างป๊อปอัปโชว์ QR Code */
+        #qrModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; flex-direction: column; }
+        .qr-box { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 80%; max-width: 300px;}
+        #qrcodeArea { display: flex; justify-content: center; margin: 20px 0; }
+        .qr-text { font-size: 14px; color: #555; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -34,8 +45,9 @@
         <div id="errorLog" class="hidden"></div>
 
         <div id="navSection" class="nav-menu hidden">
-            <button class="nav-btn btn-blue" id="btnProfile" onclick="showProfile()">หน้าหลัก</button>
-            <button class="nav-btn btn-outline" id="btnRewards" onclick="showRewards()">แลกของรางวัล</button>
+            <button class="nav-btn btn-blue" id="btnProfile" onclick="showSection('profile')">หน้าหลัก</button>
+            <button class="nav-btn btn-outline" id="btnRewards" onclick="showSection('rewards')">แลกของ</button>
+            <button class="nav-btn btn-outline" id="btnWarehouse" onclick="showSection('warehouse')">คลังของฉัน</button>
         </div>
         
         <div id="profileSection" class="hidden">
@@ -49,7 +61,22 @@
         </div>
 
         <div id="rewardsSection" class="hidden">
-            <div id="rewardsList"></div> </div>
+            <div id="rewardsList"></div>
+        </div>
+
+        <div id="warehouseSection" class="hidden">
+            <div id="warehouseList"></div>
+        </div>
+
+        <div id="qrModal" class="hidden">
+            <div class="qr-box">
+                <h3>แสดง QR Code นี้</h3>
+                <p class="qr-text">ให้พนักงานสแกนเพื่อรับของรางวัล</p>
+                <div id="qrcodeArea"></div>
+                <p class="qr-text">รหัส: <span id="qrTxId"></span></p>
+                <button class="btn-gray" onclick="closeQR()">ปิดหน้าต่าง</button>
+            </div>
+        </div>
 
         <div id="registerSection" class="hidden">
             <p>ยินดีต้อนรับ! กรุณาลงทะเบียน</p>
@@ -63,7 +90,7 @@
             <input type="text" id="updFullName" placeholder="ชื่อ-นามสกุล"><br><br>
             <input type="tel" id="updPhone" placeholder="เบอร์โทรศัพท์"><br><br>
             <button class="btn-blue" onclick="saveUpdate()">บันทึกข้อมูล</button>
-            <button class="btn-gray" onclick="closeUpdateForm()">ยกเลิก</button>
+            <button class="btn-gray" onclick="showSection('profile')">ยกเลิก</button>
         </div>
     </div>
 
@@ -76,7 +103,7 @@
             const errDiv = document.getElementById('errorLog');
             errDiv.classList.remove('hidden');
             errDiv.innerHTML += `<b>❌ เกิดข้อผิดพลาด:</b> ${step}<br>สาเหตุ: ${err.message || err}<br><br>`;
-            document.getElementById('loader').innerText = "";
+            document.getElementById('loader').classList.add('hidden');
         }
 
         async function main() {
@@ -98,8 +125,8 @@
                 
                 if (result.exists) {
                     currentUserData = result; 
-                    document.getElementById('navSection').classList.remove('hidden'); // เปิดโชว์เมนู
-                    showProfile(); // เปิดหน้าโปรไฟล์เป็นหน้าแรก
+                    document.getElementById('navSection').classList.remove('hidden');
+                    showSection('profile');
                     
                     document.getElementById('userName').innerText = result.fullName || result.displayName;
                     document.getElementById('userPoints').innerText = result.points;
@@ -109,112 +136,139 @@
                     if (result.expiringPoints > 0) {
                         expNotice.innerText = `(จะมี ${result.expiringPoints} คะแนนที่จะหมดอายุในวัน ${result.expiringDateText})`;
                         expNotice.classList.remove('hidden');
-                    } else {
-                        expNotice.classList.add('hidden');
-                    }
+                    } else { expNotice.classList.add('hidden'); }
                 } else {
                     document.getElementById('registerSection').classList.remove('hidden');
                 }
             } catch (e) { showError("การโหลดข้อมูลสมาชิก", e); }
         }
 
-        // --- ระบบสลับหน้าต่าง (เมนู) ---
-        function showProfile() {
-            document.getElementById('profileSection').classList.remove('hidden');
-            document.getElementById('rewardsSection').classList.add('hidden');
-            document.getElementById('updateSection').classList.add('hidden');
-            // เปลี่ยนสีปุ่มเมนูให้รู้ว่าอยู่หน้าไหน
-            document.getElementById('btnProfile').className = "nav-btn btn-blue";
-            document.getElementById('btnRewards').className = "nav-btn btn-outline";
+        // --- ระบบสลับหน้าแบบรวบตึง (ทำให้โค้ดสั้นลง) ---
+        function showSection(sectionName) {
+            ['profile', 'rewards', 'warehouse', 'update'].forEach(sec => {
+                document.getElementById(sec + 'Section').classList.add('hidden');
+            });
+            document.getElementById(sectionName + 'Section').classList.remove('hidden');
+
+            if(sectionName !== 'update') {
+                ['Profile', 'Rewards', 'Warehouse'].forEach(btn => {
+                    document.getElementById('btn' + btn).className = "nav-btn btn-outline";
+                });
+                document.getElementById('btn' + sectionName.charAt(0).toUpperCase() + sectionName.slice(1)).className = "nav-btn btn-blue";
+            }
+
+            // ถ้ากดหน้าแลกของ ให้ไปโหลดของ
+            if(sectionName === 'rewards') loadRewards();
+            // ถ้ากดหน้าคลังของฉัน ให้ไปโหลดประวัติ
+            if(sectionName === 'warehouse') loadWarehouse();
         }
 
-        async function showRewards() {
-            document.getElementById('profileSection').classList.add('hidden');
-            document.getElementById('rewardsSection').classList.remove('hidden');
-            document.getElementById('updateSection').classList.add('hidden');
-            document.getElementById('btnProfile').className = "nav-btn btn-outline";
-            document.getElementById('btnRewards').className = "nav-btn btn-blue";
-
-            document.getElementById('rewardsList').innerHTML = "<p>กำลังโหลดรายการของรางวัล...</p>";
-
+        async function loadRewards() {
+            document.getElementById('rewardsList').innerHTML = "<p>กำลังโหลดรายการ...</p>";
             try {
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'getRewards' })
-                });
+                const response = await fetch(WEB_APP_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'getRewards' }) });
                 const result = await response.json();
-                
                 if (result.success && result.rewards.length > 0) {
                     let html = "";
                     result.rewards.forEach(r => {
                         html += `
-                        <div class="reward-item">
-                            <div class="reward-name">🎁 ${r.name}</div>
-                            <div class="reward-detail">ใช้ ${r.points} แต้ม | เหลือ ${r.stock} สิทธิ์</div>
+                        <div class="list-item">
+                            <div class="item-name">🎁 ${r.name}</div>
+                            <div class="item-detail">ใช้ ${r.points} แต้ม | เหลือ ${r.stock} สิทธิ์</div>
                             <button class="btn-green" onclick="redeemItem('${r.id}', '${r.name}', ${r.points})">แลกของรางวัล</button>
                         </div>`;
                     });
                     document.getElementById('rewardsList').innerHTML = html;
-                } else {
-                    document.getElementById('rewardsList').innerHTML = "<p>ยังไม่มีของรางวัลให้แลกในขณะนี้ครับ</p>";
-                }
+                } else { document.getElementById('rewardsList').innerHTML = "<p>ยังไม่มีของให้แลกครับ</p>"; }
             } catch (e) { showError("โหลดของรางวัล", e); }
         }
 
-        // --- ระบบกดแลกของรางวัล ---
-        async function redeemItem(rId, rName, points) {
-            // เด้งถามเพื่อความชัวร์ก่อนแลก
-            if(!confirm(`ยืนยันการใช้ ${points} แต้ม เพื่อแลก "${rName}" ใช่หรือไม่?`)) return;
+        // --- โหลดคลังของรางวัล (ของใหม่) ---
+        async function loadWarehouse() {
+            document.getElementById('warehouseList').innerHTML = "<p>กำลังโหลดคลังของคุณ...</p>";
+            try {
+                const profile = await liff.getProfile();
+                const response = await fetch(WEB_APP_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'getWarehouse', lineUserId: profile.userId }) });
+                const result = await response.json();
+                
+                if (result.success && result.history.length > 0) {
+                    let html = "";
+                    result.history.forEach(item => {
+                        let isWait = (item.status === 'ยังไม่ได้รับ');
+                        let statusClass = isWait ? 'status-wait' : 'status-done';
+                        
+                        html += `
+                        <div class="list-item">
+                            <span class="status-badge ${statusClass}">${item.status}</span>
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-detail">วันที่แลก: ${item.date} | เลขที่: ${item.txId}</div>
+                            ${isWait ? `<button class="btn-blue" onclick="showQR('${item.txId}')">โชว์ QR Code เพื่อรับของ</button>` : ''}
+                        </div>`;
+                    });
+                    document.getElementById('warehouseList').innerHTML = html;
+                } else { document.getElementById('warehouseList').innerHTML = "<p>คุณยังไม่เคยแลกของรางวัลครับ</p>"; }
+            } catch (e) { showError("โหลดคลังของรางวัล", e); }
+        }
 
-            document.getElementById('rewardsList').innerHTML = "<p>กำลังดำเนินการแลกของรางวัล...</p>";
+        // --- ระบบเปิดป๊อปอัป QR Code ---
+        function showQR(txId) {
+            document.getElementById('qrModal').classList.remove('hidden');
+            document.getElementById('qrTxId').innerText = txId;
+            
+            // ล้าง QR เก่า (ถ้ามี) แล้ววาดใหม่
+            document.getElementById('qrcodeArea').innerHTML = "";
+            new QRCode(document.getElementById('qrcodeArea'), {
+                text: txId,
+                width: 150,
+                height: 150,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+
+        function closeQR() {
+            document.getElementById('qrModal').classList.add('hidden');
+        }
+
+        // --------------------------------------------------------
+        // ฟังก์ชันอื่นๆ (เหมือนเดิม)
+        // --------------------------------------------------------
+        async function redeemItem(rId, rName, points) {
+            if(!confirm(`ยืนยันการใช้ ${points} แต้ม แลก "${rName}"?`)) return;
+            document.getElementById('rewardsList').innerHTML = "<p>กำลังดำเนินการ...</p>";
             try {
                 const profile = await liff.getProfile();
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST', redirect: 'follow', 
-                    body: JSON.stringify({ 
-                        action: 'redeem', lineUserId: profile.userId, 
-                        rewardId: rId, rewardName: rName, points: points 
-                    })
+                    body: JSON.stringify({ action: 'redeem', lineUserId: profile.userId, rewardId: rId, rewardName: rName, points: points })
                 });
                 const result = await response.json();
-                
                 if(result.success) {
-                    alert("🎉 แลกของรางวัลสำเร็จ!");
-                    // อัปเดตแต้มบนหน้าจอมือถือทันที
+                    alert("🎉 แลกสำเร็จ! ของรางวัลอยู่ใน 'คลังของฉัน'");
                     document.getElementById('userPoints').innerText = result.newPoints;
-                    showProfile(); // กลับไปหน้าแรกเพื่อโชว์แต้มที่ลดลง
-                } else {
-                    alert("❌ ไม่สามารถแลกได้: " + result.message);
-                    showRewards(); // โหลดหน้าของรางวัลใหม่
-                }
+                    showSection('warehouse'); // เด้งไปหน้าคลังของฉันเลย
+                } else { alert("❌ " + result.message); loadRewards(); }
             } catch (e) { showError("ตอนกดแลกรางวัล", e); }
         }
 
-        // --- ฟังก์ชันเดิม (ไม่ต้องแก้) ---
         function openUpdateForm() {
-            document.getElementById('profileSection').classList.add('hidden');
-            document.getElementById('updateSection').classList.remove('hidden');
+            showSection('update');
             document.getElementById('updFullName').value = currentUserData.fullName;
             document.getElementById('updPhone').value = currentUserData.phone;
         }
-        function closeUpdateForm() { showProfile(); }
 
         async function saveUpdate() {
             try {
-                const newName = document.getElementById('updFullName').value;
-                const newPhone = document.getElementById('updPhone').value;
-                if(!newName || !newPhone) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
-                document.getElementById('updateSection').innerHTML = "<p>กำลังบันทึกข้อมูล...</p>";
+                const newName = document.getElementById('updFullName').value; const newPhone = document.getElementById('updPhone').value;
+                if(!newName || !newPhone) { alert("กรอกข้อมูลให้ครบครับ"); return; }
                 const profile = await liff.getProfile();
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST', redirect: 'follow',
-                    body: JSON.stringify({ action: 'updateUser', lineUserId: profile.userId, displayName: profile.displayName, fullName: newName, phone: newPhone })
-                });
+                const response = await fetch(WEB_APP_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'updateUser', lineUserId: profile.userId, displayName: profile.displayName, fullName: newName, phone: newPhone }) });
                 const result = await response.json();
                 if(result.success) {
                     document.getElementById('userName').innerText = result.newFullName;
                     currentUserData.fullName = result.newFullName; currentUserData.phone = newPhone;
-                    showProfile();
-                    document.getElementById('updateSection').innerHTML = `<p>แก้ไขข้อมูลส่วนตัว</p><input type="text" id="updFullName"><br><br><input type="tel" id="updPhone"><br><br><button class="btn-blue" onclick="saveUpdate()">บันทึกข้อมูล</button><button class="btn-gray" onclick="closeUpdateForm()">ยกเลิก</button>`;
+                    showSection('profile');
                 }
             } catch (e) { showError("ตอนบันทึกข้อมูล", e); }
         }
@@ -222,30 +276,25 @@
         async function dailyCheckIn() {
             try {
                 const profile = await liff.getProfile();
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'addPoints', lineUserId: profile.userId, points: 10, desc: 'เช็คอินรายวัน' })
-                });
+                const response = await fetch(WEB_APP_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'addPoints', lineUserId: profile.userId, points: 10, desc: 'เช็คอินรายวัน' }) });
                 const result = await response.json();
                 if(result.success) {
-                    alert("เช็คอินสำเร็จ! ได้ 10 แต้ม");
-                    document.getElementById('userPoints').innerText = result.newPoints;
-                    document.getElementById('userLevel').innerText = result.level;
+                    alert("เช็คอินสำเร็จ!");
+                    document.getElementById('userPoints').innerText = result.newPoints; document.getElementById('userLevel').innerText = result.level;
                 }
-            } catch (e) { showError("ตอนกดเช็คอิน", e); }
+            } catch (e) { showError("ตอนเช็คอิน", e); }
         }
 
         async function register() {
             try {
                 const f = document.getElementById('regFullName').value; const p = document.getElementById('regPhone').value;
-                if(!f || !p) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
+                if(!f || !p) { alert("กรอกข้อมูลให้ครบครับ"); return; }
                 document.getElementById('registerSection').innerHTML = "<p>กำลังบันทึกข้อมูล...</p>";
                 const profile = await liff.getProfile();
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'register', lineUserId: profile.userId, displayName: profile.displayName, fullName: f, phone: p })
-                });
+                const response = await fetch(WEB_APP_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'register', lineUserId: profile.userId, displayName: profile.displayName, fullName: f, phone: p }) });
                 const result = await response.json();
-                if(result.success) { alert("สมัครสมาชิกสำเร็จ!"); location.reload(); }
-            } catch (e) { showError("ตอนกดสมัครสมาชิก", e); }
+                if(result.success) { alert("สมัครสำเร็จ!"); location.reload(); }
+            } catch (e) { showError("ตอนสมัคร", e); }
         }
 
         main();
