@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BioBloom Admin Scanner</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #2c3e50; color: white; }
-        .container { background: white; color: #333; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 400px; margin: auto; }
+        body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #2c3e50; color: white; margin: 0; }
+        .container { background: white; color: #333; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 400px; margin: 20px auto; }
         #reader { width: 100%; border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
-        .status-msg { padding: 15px; border-radius: 8px; margin-top: 20px; font-weight: bold; display: none; }
+        .status-msg { padding: 15px; border-radius: 8px; margin-top: 20px; font-weight: bold; display: none; word-wrap: break-word; }
         .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         button { background: #3498db; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
@@ -25,7 +25,7 @@
         <div id="statusBox" class="status-msg"></div>
         
         <button onclick="startScanner()">เปิดกล้องสแกน</button>
-        <button style="background:#95a5a6;" onclick="location.reload()">ล้างค่าใหม่</button>
+        <button style="background:#95a5a6;" onclick="location.reload()">ล้างค่าใหม่ / สแกนคิวต่อไป</button>
     </div>
 
     <script>
@@ -33,18 +33,29 @@
         let html5QrCode;
 
         function startScanner() {
-            html5QrCode = new html5Qrcode("reader");
+            // แก้ไขตัวพิมพ์ใหญ่ H ตรงนี้เรียบร้อยแล้ว
+            html5QrCode = new Html5Qrcode("reader");
+            
+            // ตั้งค่าความละเอียดและขนาดกรอบสแกน
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+            // เปิดกล้องหลัง (environment)
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+            .catch(err => {
+                showStatus("❌ ไม่สามารถเข้าถึงกล้องได้: กรุณาอนุญาตการใช้งานกล้องในเบราว์เซอร์ของคุณ", "error");
+            });
+            
+            // ซ่อนกล่องข้อความเมื่อเริ่มสแกนใหม่
+            document.getElementById('statusBox').style.display = "none";
         }
 
         async function onScanSuccess(decodedText, decodedResult) {
-            // หยุดสแกนชั่วคราวเมื่อเจอ QR
+            // 1. เมื่อสแกนติด ให้หยุดกล้องทันทีเพื่อป้องกันการสแกนซ้ำรัวๆ
             await html5QrCode.stop();
             
-            showStatus("กำลังตรวจสอบรหัส: " + decodedText, "success");
+            showStatus("กำลังตรวจสอบรหัส: " + decodedText + "...", "success");
 
+            // 2. ส่งรหัสไปให้ Google Sheets ตรวจสอบ
             try {
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST', redirect: 'follow',
@@ -52,13 +63,14 @@
                 });
                 const result = await response.json();
 
+                // 3. แสดงผลลัพธ์
                 if (result.success) {
-                    showStatus(`✅ ${result.message}<br>ของรางวัล: ${result.rewardName}`, "success");
+                    showStatus(`✅ ${result.message}<br><br><b>ของรางวัล: ${result.rewardName}</b>`, "success");
                 } else {
                     showStatus(`❌ ${result.message}`, "error");
                 }
             } catch (e) {
-                showStatus("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์", "error");
+                showStatus("❌ เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์", "error");
             }
         }
 
