@@ -210,21 +210,18 @@
             } catch (e) { showError("โหลดคลังของรางวัล", e); }
         }
 
-        // --- ระบบเปิดป๊อปอัป QR Code ---
+// --- ระบบเปิดป๊อปอัป QR Code (เวอร์ชันแก้บัคค้าง) ---
         function showQR(txId) {
+            // 1. โชว์หน้าต่างป๊อปอัป
             document.getElementById('qrModal').classList.remove('hidden');
-            document.getElementById('qrTxId').innerText = txId;
             
-            // ล้าง QR เก่า (ถ้ามี) แล้ววาดใหม่
-            document.getElementById('qrcodeArea').innerHTML = "";
-            new QRCode(document.getElementById('qrcodeArea'), {
-                text: txId,
-                width: 150,
-                height: 150,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
+            // 2. ดักจับบั๊ก: ถ้าไม่มีรหัสส่งมา ให้ใช้คำว่า "No-ID" แทนช่องว่าง
+            let safeTxId = txId ? txId : "No-ID";
+            document.getElementById('qrTxId').innerText = safeTxId;
+            
+            // 3. ใช้ Image API สร้างภาพ QR Code แทน (เสถียร 100% ไม่ทำให้หน้าเว็บค้าง)
+            const qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + safeTxId;
+            document.getElementById('qrcodeArea').innerHTML = `<img src="${qrApiUrl}" alt="QR Code" style="border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">`;
         }
 
         function closeQR() {
